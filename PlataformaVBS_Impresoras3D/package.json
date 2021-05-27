@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/Julpygo/Industira4.0-Univalle/issues"
   },
-  "homepage": "https://github.com/Julpygo/Industira4.0-Univalle#readme"
+  "homepage": "https://github.com/Julpygo/Industira4.0-Univalle#readme",
+  "dependencies": {
+    "node-opcua": "^2.43.0"
+  }
 }
