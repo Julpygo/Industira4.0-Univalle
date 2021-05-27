@@ -125,7 +125,7 @@ const userManager = {
     IsRotational.setValueFromSource({ dataType: "Boolean", value: true});
 
     setInterval(() => {
-        ActPosX.setValueFromSource({dataType: "Double", value: PosX})
+        ActPosX.setValueFromSource({dataType: "Double", value: 50*Math.random()+PosX})
         ActPosY.setValueFromSource({dataType: "Double", value: PosY})
         ActPosZ.setValueFromSource({dataType: "Double", value: PosZ})
     }, 500);

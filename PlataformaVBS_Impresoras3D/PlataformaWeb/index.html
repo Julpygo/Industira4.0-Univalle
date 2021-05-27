@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+     <meta charset="UTF-8">
+     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Plataforma VBS impresoras 3D</title>
+     <script src="/socket.io/socket.io.js"></script>
+     <script src="libraries/RGraph.common.core.js"></script>
+     <script src="libraries/RGraph.line.js"></script>
+     <script src="libraries/RGraph.common.dynamic.js"></script>
+     <script src="libraries/RGraph.gauge.js"></script>
+     <link href="css/tabulator.min.css" rel="stylesheet">
+     <script type="text/javascript" src="js/tabulator.min.js"></script>
+</head>
+<body>
+     <h1>Grafica 1</h1>
+     <canvas id="cvs_line" width="950" height="400">
+          [No canvas support]
+     </canvas>
+     
+     <canvas id="cvs_gauge" width="300" height="150">
+          [No canvas support]
+     </canvas>
+
+     <div id="alarm-table"></div>
+
+     <script src="graficos.js"></script>
+
+</body>
+</html>

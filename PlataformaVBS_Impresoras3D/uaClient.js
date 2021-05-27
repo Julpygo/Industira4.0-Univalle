@@ -14,7 +14,7 @@ CREACION DE CONSTANTES PARA LA COMUNICACION Y LA BASE DE DATOS
 
 //opc ua
 const endpointUrl = "opc.tcp://" + require("os").hostname() + ":4334/UA/ImpresoraServer";
-const nodeIdToMonitor = "ns=1;i=1055";
+const nodeIdToMonitor = "ns=1;i=1056";
 //aplicacion web
 const port = 3000;
 
@@ -144,7 +144,7 @@ app.set('port', process.env.PORT || port);
 app.set("view engine", "html");
 
 // definir el directorio de estaticos
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'PlataformaWeb')));
 app.set('Views', __dirname + '/');
 
 // Que hacer cuando se solicite desde el navegador
