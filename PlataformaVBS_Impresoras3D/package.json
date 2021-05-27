@@ -1,0 +1,19 @@
+{
+  "name": "plataformavbs_impresoras3d",
+  "version": "1.0.0",
+  "description": "Codigós para un sistema de gestion de mantenimiento en impresoras 3D",
+  "main": "uaServer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Julpygo/Industira4.0-Univalle.git"
+  },
+  "author": "G. Julian David",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Julpygo/Industira4.0-Univalle/issues"
+  },
+  "homepage": "https://github.com/Julpygo/Industira4.0-Univalle#readme"
+}
