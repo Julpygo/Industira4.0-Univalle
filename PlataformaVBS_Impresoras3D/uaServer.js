@@ -1,6 +1,6 @@
 // IMPORTACION DE LIBRERIAS
 
-const { OPCUAServer, Variant, DataType, nodesets,StatusCodes } = require("node-opcua");
+const { OPCUAServer, DataType, nodesets,StatusCodes, Variant } = require("node-opcua");
 const chalk = require("chalk");
 const SerialPort = require('serialport');
 // const raspi = require('raspi');
@@ -8,9 +8,8 @@ const SerialPort = require('serialport');
 
 // VARIABLES Globales
 
-PosX = '';
-PosY = '';
-PosZ = '';
+PosX = ''; PosY = ''; PosZ = '';
+Tb = ''; Te = '';    // Tb: temperatura base, Te: temperatura extrusor
 strdata = '';
 
 // CONFIGURACION DE USUARIOS
@@ -35,7 +34,6 @@ const userManager = {
 
     const server = new OPCUAServer({
         nodeset_filename: [
-
             nodesets.standard,
             nodesets.cnc,
         ],
@@ -99,6 +97,24 @@ const userManager = {
         componentOf: CncAxisList,
     });
 
+    // Añadir variables no contempladas en la especificacion OPC 40502
+    const TempBase = namespace.addVariable({
+        componentOf: opc40502,
+        browseName: "T base",
+        dataType: "Double",
+        value: {
+            get: () => new Variant({ dataType: DataType.Double, value: Tb })
+        }
+    });
+    const TempExtr = namespace.addVariable({
+        componentOf: opc40502,
+        browseName: "T extrusor",
+        dataType: "Double",
+        value: {
+            get: () => new Variant({ dataType: DataType.Double, value: Te })
+        }
+    });
+
     const CncAxisX = CncAxisType.instantiate({
         browseName: "Eje X",
         componentOf: CncAxisList,
@@ -118,16 +134,18 @@ const userManager = {
     // buscar nodos a mapear
     const IsRotational = addressSpace.findNode("ns=1;i=1014");
     const ActPosX = addressSpace.findNode("ns=1;i=1056");
-    const ActPosY = addressSpace.findNode("ns=1;i=1090");
-    const ActPosZ = addressSpace.findNode("ns=1;i=1124");
+    const ActPosY = addressSpace.findNode("ns=1;i=1092");
+    const ActPosZ = addressSpace.findNode("ns=1;i=1126");
 
     // mapear variables
     IsRotational.setValueFromSource({ dataType: "Boolean", value: true});
 
     setInterval(() => {
         ActPosX.setValueFromSource({dataType: "Double", value: 50*Math.random()+PosX})
-        ActPosY.setValueFromSource({dataType: "Double", value: PosY})
-        ActPosZ.setValueFromSource({dataType: "Double", value: PosZ})
+        ActPosY.setValueFromSource({dataType: "Double", value: 50*Math.random()+PosY})
+        ActPosZ.setValueFromSource({dataType: "Double", value: 50*Math.random()+PosZ})
+        Tb = 50*Math.random()
+        Te = 50*Math.random()
     }, 500);
 
     //Crear metodos
@@ -215,7 +233,7 @@ mySerial.on('data', function(data){
         PosZ = Number(strdata.slice(indZ+2,indArro-1));
         let indT = strdata.search('T');
         let indTf = strdata.search('/');
-        Thot = Number(strdata.slice(indT+2,indTf-1))
+        Tb = Number(strdata.slice(indT+2,indTf-1));
         strdata = '';
     }
     else{

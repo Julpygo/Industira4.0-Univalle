@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <a href="index.html">Volver</a>
+    <form action="/autorizacion" method="POST">
+        <div align="center">
+            <label>¿Autoriza usted la revision tecnica de su máquina?</label><br>
+            <label>SI</label>
+            <input name="opcion" type="radio" value="SI" checked><br>
+            <label>Tipo: </label>
+            <input name="Tipo" type="text" value="" size="20" maxlength="6"><br><br>
+            <label>Tiempo: </label>
+            <input name="Tiempo" type="datetime" value="" size="20" placeholder="Ingrese tiempo"><br><br>
+            <input name="boton" type="submit" value="Enviar">
+        </div>
+    </form>
+    
+</body>
+</html>
