@@ -142,4 +142,9 @@ socket.on("Te", function(dataValue){
     };
 });
 
-// atender el evento
+function obtener_Gcode(){
+    let Gcode = document.getElementById("Gcodes").value
+    socket.emit("Metodo", {
+        gcodes: Gcode
+    });
+}

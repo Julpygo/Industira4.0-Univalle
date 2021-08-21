@@ -20,11 +20,10 @@
           </canvas>
           <canvas id="cvs_line2" width="950" height="400">
                [No canvas support]
-          </canvas>
-          <form>
-               <textarea name="texto" rows="4" cols="40" placeholder="Escriba Gcodes aqui"></textarea><br>
-               <input name="boton" type="submit" value="Enviar">
-          </form>
+          </canvas><br>
+          <textarea id="Gcodes" rows="4" cols="40" placeholder="Escriba Gcodes aqui"></textarea><br>
+          <button onclick="obtener_Gcode()">Enviar</button>
+
           <h3>Alarmas</h3>
           <div id="alarm-table"></div>
           <script src="graficos.js"></script>

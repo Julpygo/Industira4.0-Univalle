@@ -7,17 +7,16 @@
     <title>Document</title>
 </head>
 <body>
-    <a href="index.html">Volver</a>
     <form action="/autorizacion" method="POST">
         <div align="center">
             <label>¿Autoriza usted la revision tecnica de su máquina?</label><br>
             <label>SI</label>
-            <input name="opcion" type="radio" value="SI" checked><br>
+            <input name="respuesta" type="radio" value="SI" checked><br>
             <label>Tipo: </label>
-            <input name="Tipo" type="text" value="" size="20" maxlength="6"><br><br>
+            <input type="text" name="tipo" size="20" placeholder="Tipo de falla"><br><br>
             <label>Tiempo: </label>
-            <input name="Tiempo" type="datetime" value="" size="20" placeholder="Ingrese tiempo"><br><br>
-            <input name="boton" type="submit" value="Enviar">
+            <input type="datetime" name="tiempo" size="20" placeholder="Ingrese tiempo"><br><br>
+            <button>Enviar</button>
         </div>
     </form>
     
