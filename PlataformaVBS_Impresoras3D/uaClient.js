@@ -21,8 +21,8 @@ const nodeIdToMonitor4 = "ns=1;i=1147";   //Tb
 const nodeIdToMonitor5 = "ns=1;i=1148";   //Te
 
 /* --- CONSTASTES MONGO DB ---*/
-// const uri = "mongodb+srv://lianju:Yuligb1996@cluster0.z4spe.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
-// const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopology: true});
+const uri = "mongodb+srv://lianju:Yuligb1996@cluster0.z4spe.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
+const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopology: true});
 
 
 /* --- CLIENTE UA --- */
@@ -107,17 +107,17 @@ const nodeIdToMonitor5 = "ns=1;i=1148";   //Te
     const monitoredItem5 = await subscription.monitor(itemToMonitor5, parameters, TimestampsToReturn.Both);
 
     /* --- CONEXION A LA BASE DE DATOS --- */
-    // await clientmongo.connect();
-    // const collection = clientmongo.db("VarImpresora3D").collection("Historial de datos");
+    await clientmongo.connect();
+    const collection = clientmongo.db("VarImpresora3D").collection("Historial de datos");
 
     /* --- ACTUALIZACION DE VARIABLES --- */
     monitoredItem.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-      // collection.insertOne({
-      //   Variable: "Pos x",
-      //   valor: dataValue.value.value, 
-      //   tiempo: dataValue.serverTimestamp
-      // });
+      collection.insertOne({
+        Variable: "Pos x",
+        valor: dataValue.value.value, 
+        tiempo: dataValue.serverTimestamp
+      });
       
       /* --- ACTUALIZACION EN APP WEB --- */
       io.sockets.emit("PosX", {
