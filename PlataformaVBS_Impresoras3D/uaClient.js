@@ -11,6 +11,7 @@ var EventEmitter = require('events')
 
 /* --- CREACION DE VARIABLES INICIALES --- */
 var event = new EventEmitter();
+gcodes = 'inicial';
 
 /* --- CONSTANTES DEL SERVIDOR UA ---*/
 const endpointUrl = "opc.tcp://" + require("os").hostname() + ":4334/UA/ImpresoraServer";
@@ -78,18 +79,18 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     };
 
     /* --- PRUEBA DE INVOCAR METODO --- */
-    const methodsToCall = [ {
-      objectId: "ns=1;i=1004",
-      methodId: "ns=1;i=1149",
-      inputArguments: [
-        new Variant({dataType: DataType.String, value: "ejemplo"})
-      ]
-    }];
-    session.call(methodsToCall,function(err,callResults) {
+    Gcode = () => { 
+      session.call([{
+        objectId: "ns=1;i=1004",
+        methodId: "ns=1;i=1149",
+        inputArguments: [
+          new Variant({dataType: DataType.String, value: gcodes})
+        ]
+      }],function(err,callResults) {
       if (!err) {
         const callResult = callResults[0];
-      }
-    });
+      }});
+    };
     /* --- */
 
     /* --- DEFINIR PARAMETROS DE MONITOREO --- */
@@ -268,7 +269,8 @@ io.on('connection', (socket) => {
   console.log('new conexion',socket.id);
   
   socket.on("Metodo",(data) => {
-    console.log(data);
+    gcodes = data.gcodes
+    Gcode()
   });
 });
 
@@ -279,32 +281,32 @@ console.log("visit http://localhost:" + port);
 /* --- NOTIFICADOR --- */
 
 /* --- CREAR OBJETO REUTILIZABLE SMTP  --- */
-let transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'gomez.julian@correounivalle.edu.co', // generated ethereal user 
-    pass: 'gqwr xkdn xalw uyog', // generated ethereal password 
-  },
-});
-event.on("Alarm Te", (data) => {
-  var mailOptions = {
-    from: 'gomez.julian@correounivalle.edu.co',
-    to: 'julian-gomes@outlook.com',
-    subject: 'Alarma prueba',
-    text: `
-    Se ha detectado una anomalia en su Impresora 3D.
-    Si deseas autorizar una revision de esta para garantizar su
-    optimo funcionamiento u obtener mas información. 
+// let transporter = nodemailer.createTransport({
+//   service: 'gmail',
+//   auth: {
+//     user: 'gomez.julian@correounivalle.edu.co', // generated ethereal user 
+//     pass: 'gqwr xkdn xalw uyog', // generated ethereal password 
+//   },
+// });
+// event.on("Alarm Te", (data) => {
+//   var mailOptions = {
+//     from: 'gomez.julian@correounivalle.edu.co',
+//     to: 'julian-gomes@outlook.com',
+//     subject: 'Alarma prueba',
+//     text: `
+//     Se ha detectado una anomalia en su Impresora 3D.
+//     Si deseas autorizar una revision de esta para garantizar su
+//     optimo funcionamiento u obtener mas información. 
     
-    HAZ CLIC EN EL SIGUIENTE ENLACE  http://localhost:3000/autorizacion.html
-    Los datos pedidos en el enlace son los siguientes:
-    Tipo: ${data.tipo}, Tiempo: ${data.tiempo}`
-  };
-  transporter.sendMail(mailOptions, function(error, info){
-    if (error) {
-      console.log(error);
-    } else {
-      console.log('Email enviado: ' + info.response);
-    }
-  });
-})
+//     HAZ CLIC EN EL SIGUIENTE ENLACE  http://localhost:3000/autorizacion.html
+//     Los datos pedidos en el enlace son los siguientes:
+//     Tipo: ${data.tipo}, Tiempo: ${data.tiempo}`
+//   };
+//   transporter.sendMail(mailOptions, function(error, info){
+//     if (error) {
+//       console.log(error);
+//     } else {
+//       console.log('Email enviado: ' + info.response);
+//     }
+//   });
+// })

@@ -163,7 +163,6 @@ const userManager = {
                 }]
             };
             callback(null,callMethodResult);
-            console.log("funciono");
             console.log(inCode);
         });
         
