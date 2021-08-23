@@ -78,7 +78,7 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
       AttributeIds: AttributeIds.Value
     };
 
-    /* --- PRUEBA DE INVOCAR METODO --- */
+    /* --- FUNCION GLOBAL PARA INVOCAR METODO --- */
     Gcode = () => { 
       session.call([{
         objectId: "ns=1;i=1004",
