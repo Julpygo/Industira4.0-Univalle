@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoreo de motores</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="libraries/RGraph.common.dynamic.js"></script>
+    <script src="libraries/RGraph.common.core.js"></script>
+    <script src="libraries/RGraph.line.js"></script>
+    <link href="css/tabulator.min.css" rel="stylesheet">
+    <script type="text/javascript" src="js/tabulator.min.js"></script>
+</head>
+<body>
+    <div align="center">
+        <canvas id="cvs_line" width="950" height="400">
+             [No canvas support]
+        </canvas>
+        <canvas id="cvs_line2" width="950" height="400">
+             [No canvas support]
+        </canvas><br>
+        <textarea id="Gcodes" rows="4" cols="40" placeholder="Escriba Gcodes aqui"></textarea><br>
+        <button onclick="obtener_Gcode()">Enviar</button>
+
+        <h3>Alarmas</h3>
+        <div id="alarm-table"></div>
+        <script src="motores.js"></script>
+   </div>
+    
+</body>
+</html>

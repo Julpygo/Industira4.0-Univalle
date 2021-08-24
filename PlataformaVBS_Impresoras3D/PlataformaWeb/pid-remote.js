@@ -1,29 +1,29 @@
-/* 
+/*** 
 CREACION DE VARIABLES PARA LAS GRAFICAS
- */
+ ***/
 
 const socket = io();
 
-// variables para los objetos de graficas
+/*** variables para los objetos de graficas ***/
 let Pline = null;
 let Pline2 = null;
 let Gauge1 = null;
 let table;
-// variables para los datos
+/*** variables para los datos ***/
 let data_line = [];
 let data_line2 = [];
 let data_table = [];
-// obtener los canvas
+/*** obtener los canvas ***/
 canvas1 = document.getElementById("cvs_line");
 canvas2 = document.getElementById("cvs_line2");
 
 const numvalues = 200;
 for (let i = 0; i < numvalues; ++i){data_line.push(null);data_line2.push(null)};
 let flag = true;
-/* 
+/*** 
 SE UTILIZA LA FUNCION ONLOAD PARA CREAR O INICIALIZAR
 LAS GRAFICAS CUANDO SE CARGA LA PAGINA
- */
+ ***/
 window.onload = function(){
      // Parametrizar la grafica
      Pline = new RGraph.Line({
@@ -33,7 +33,7 @@ window.onload = function(){
                xaxisLabels: ['tiempo'],
                marginLeft: 75,
                marginRight: 55,
-               title: 'Pos X vs t',
+               title: 'Tb vs t',
                titleBold: true,
                titleSize: 16,
                filled: true,
@@ -91,9 +91,9 @@ window.onload = function(){
         ],
     });
 };
-/* 
+/*** 
 FUNCIONES NECESARIAS PARA ACTUALIZAR LAS GRAFICAS
- */
+ ***/
 function drawLine(value){
     if (!Pline){return}
     RGraph.Clear(canvas1);
@@ -118,12 +118,11 @@ function drawLine2(value){
     Pline2.draw();
 };
 
-/* 
+/*** 
 CONECTAR AL SOCKET Y LEER EL MENSAJE
- */
-// conexion
+ ***/
 
-socket.on("PosX", function(dataValue){
+socket.on("Tb", function(dataValue){
     drawLine(dataValue.value);
 });
 
@@ -131,7 +130,7 @@ socket.on("Te", function(dataValue){
     drawLine2(dataValue.value);
 
     if (dataValue.value > 49 && flag == true){
-        // agregar la alarma a la tabla y cambiar la bandera
+        /*** agregar la alarma a la tabla y cambiar la bandera ***/
         flag = false;
         data_table = table.getData();
         data_table.push({var:"T del extrusor" , t:dataValue.timestamp, v:dataValue.value, a:"Valor muy alto"});
