@@ -7,8 +7,9 @@ const SerialPort = require('serialport');
 
 /* --- VARIABLES GLOBALES --- */
 PosX = ''; PosY = ''; PosZ = '';
-Tb = ''; Te = '';    // Tb: temperatura base, Te: temperatura extrusor ----------
+Tb = ''; Te = '';    // Tb: temperatura base, Te: temperatura extrusor
 strdata = '';
+const I4AAS = "Opc.Ua.I4AAS.NodeSet2.xml"
 
 /* --- ACCESO DE USUARIOS --- */
 const userManager = {
@@ -33,6 +34,9 @@ const userManager = {
             nodeset_filename: [
                 nodesets.standard,
                 nodesets.cnc,
+                nodesets.di,
+                nodesets.machinery,
+                I4AAS
             ],
             /* ---- */
             serverInfo: {
@@ -52,39 +56,45 @@ const userManager = {
 
         await server.initialize();
         const addressSpace = server.engine.addressSpace;    // generar addressSpace inicial
-        const nsCnc = addressSpace.getNamespaceIndex("http://opcfoundation.org/UA/CNC");    // NS DEL TYPE CNC(URI)
-        const namespace = addressSpace.getOwnNamespace();   // Crear nuestro namespace(NS) 
+        const nsCnc = addressSpace.getNamespaceIndex("http://opcfoundation.org/UA/CNC");    // NS DEL CNC(URI)
+        const nsMch = addressSpace.getNamespaceIndex("http://opcfoundation.org/UA/Machinery/");    // NS DE MACHINARY(URI)
+        const nsDI = addressSpace.getNamespaceIndex("http://opcfoundation.org/UA/DI/");    // NS DE DI(URI)
+        const nsAAS = addressSpace.getNamespaceIndex("http://opcfoundation.org/UA/I4AAS/");    // NS DE I4AAS(URI)
+        const namespace = addressSpace.getOwnNamespace("http://opcfoundation.org/UA/");   // Crear nuestro namespace(NS) 
 
         /* --- BUSCAR OBJECTYPES A INSTANCIAR --- */
         const CncInterfaceType = addressSpace.findObjectType("CncInterfaceType",nsCnc);
         const CncAxisType = addressSpace.findObjectType("CncAxisType",nsCnc);
-
+        const DeviceType = addressSpace.findObjectType("DeviceType",nsDI);
+        const IMachineVendorNameplateType = addressSpace.findObjectType("IMachineVendorNameplateType",nsMch);
+        const AASAssetAdministrationShellType = addressSpace.findObjectType("AASAssetAdministrationShellType",nsAAS);
+        const AASReferenceType = addressSpace.findObjectType("AASReferenceType",nsAAS);
+        const AASSubmodelType = addressSpace.findObjectType("AASSubmodelType",nsAAS);
+        const AASConceptDictionaryType = addressSpace.findObjectType("AASConceptDictionaryType",nsAAS);
+        const IAASIdentifiableType = addressSpace.findObjectType("IAASIdentifiableType",nsAAS);
+        const DerivedFrom = addressSpace.findNode("ns=5;i=5007",nsAAS);
+        
         /* --- ESPACIO PARA INSTANCIAR, CREAR Y MAPEAR (OBJETOS, VARIABLES, METODOS) --- */
         
         /* --- CREAR OBJETOS ---*/
+        const AASROOT = namespace.addFolder(addressSpace.rootFolder.objects,{
+            browseName: "AASROOT"
+        });
         const impresora = namespace.addObject({
             organizedBy: addressSpace.rootFolder.objects,
             browseName: "AAS Impresora"
         });
-        const activo = namespace.addObject({
+        const document = namespace.addObject({
             componentOf: impresora,
-            browseName: "Activo"
-        });
-        const documentacion = namespace.addObject({
-            componentOf: impresora,
-            browseName: "Documentacion"
-        });
-        const identificacion = namespace.addObject({
-            componentOf: impresora,
-            browseName: "Identificacion"
+            browseName: "Submodel:Document"
         });
 
         /* --- INSTANCIAR OBJECTTYPES ---*/ 
         const opc40502 = CncInterfaceType.instantiate({
-            browseName: "OPC 40502",
+            browseName: "Submodel:OperationalData",
             componentOf: impresora,
         });
-        const CncAxisList = addressSpace.findNode("ns=1;i=1005");   // nivel inferior del CncInterface instanciado
+        const CncAxisList = addressSpace.findNode("ns=1;i=1004");   // nivel inferior del CncInterface instanciado
         const CncAxisExtrusor = CncAxisType.instantiate({
             browseName: "Eje Extrusor",
             componentOf: CncAxisList,
@@ -102,6 +112,54 @@ const userManager = {
             componentOf: CncAxisList,
         });
 
+        const IdImpresoraType = namespace.addObjectType({
+            browseName: "IdImpresoraType",
+            isAbstract: false,
+            subtypeOf: DeviceType
+        })
+        const NameplateType = namespace.addObjectType({
+            browseName: "NameplateType",
+            isAbstract: false,
+            subtypeOf: IMachineVendorNameplateType
+        })
+        const Identification = IdImpresoraType.instantiate({
+            browseName: "Submodel:Identification",
+            componentOf: impresora,
+        });
+        const Nameplate = NameplateType.instantiate({
+            browseName: "Submodel:Nameplate",
+            componentOf: impresora,
+        });
+        const AAS = AASAssetAdministrationShellType.instantiate({
+            browseName: "AssetAdministrationShell:Impresora3D",
+            componentOf: AASROOT,
+            // optionals: 
+        });
+        AAS.addReference({
+            referenceType: "HasComponent",
+            nodeId: DerivedFrom
+        })
+        AAS.addReference({
+            referenceType: "HasInterface",
+            nodeId: IAASIdentifiableType
+        })
+        const AAS1 = AASReferenceType.instantiate({
+            browseName: "AASReferenceType",
+            componentOf: AAS,
+        });
+        const AAS2 = AASSubmodelType.instantiate({
+            browseName: "AASSubmodelType",
+            componentOf: AAS,
+        });
+        const AAS3 = AASConceptDictionaryType.instantiate({
+            browseName: "AASConceptDictionaryType",
+            componentOf: AAS,
+        });
+        // const IdentificationModel = namespace.addObject({
+        //     organizedBy: addressSpace.rootFolder.objects,
+        //     browseName: "AssetIdentificationModel"
+        // });
+
         /* --- AGREAGAR OTRAS VARIABLES --- */
         const TempBase = namespace.addVariable({
             componentOf: opc40502,
@@ -109,7 +167,7 @@ const userManager = {
             dataType: "Double",
             value: {
                 get: () => new Variant({ dataType: DataType.Double, value: Tb })
-            }
+            },
         });
         const TempExtr = namespace.addVariable({
             componentOf: opc40502,
@@ -117,7 +175,7 @@ const userManager = {
             dataType: "Double",
             value: {
                 get: () => new Variant({ dataType: DataType.Double, value: Te })
-            }
+            },
         });
 
         /* --- BUSCAR NODOS A MAPEAR --- */
@@ -184,49 +242,49 @@ const userManager = {
     }
     catch(err){
         /* --- CODIGO DE EJECUCION SI OCURRE UN ERROR EN EL BLOQUE TRY --- */
-        console.log(bgRed.white("Error" + err.message));
+        console.log(chalk.bgRed.white("Error" + err.message));
         console.log(err);
         process.exit(-1);
     }
 })();
 
 /* --- APP COMUNICACION SERIAL ---*/
-const Readline = SerialPort.parsers.Readline;
-const parser = new Readline();
-const mySerial = new SerialPort("COM2",{
-    baudRate: 115200
-})
-mySerial.on('open', function(){
-    console.log('puerto serial abierto');
-});
-mySerial.on('data', function(data){
-    let binarios = data;    //buffers recividos
-    let datosSerial = binarios.toString();  //Decodificacion a str
-    let fin = datosSerial.search('\r\n');
-    if(fin != -1){
-        strdata = strdata + datosSerial;
-        let indX = strdata.search('X');
-        let indY = strdata.search('Y');
-        let indZ = strdata.search('Z');
-        let indArro = strdata.search('@');
-        PosX = Number(strdata.slice(indX+2,indY-1));
-        PosY = Number(strdata.slice(indY+2,indZ-1));
-        PosZ = Number(strdata.slice(indZ+2,indArro-1));
-        let indT = strdata.search('T');
-        let indTf = strdata.search('/');
-        Tb = Number(strdata.slice(indT+2,indTf-1));
-        strdata = '';
-    }
-    else{
-        strdata = strdata + datosSerial;
-    };
-});
-mySerial.on('err', function(err){
-    console.log("Fallo con la conexion serial");
-});
-setInterval(()=>{
-    mySerial.write("M114 M105\r\n");
-},5000);
+// const Readline = SerialPort.parsers.Readline;
+// const parser = new Readline();
+// const mySerial = new SerialPort("COM2",{
+//     baudRate: 115200
+// })
+// mySerial.on('open', function(){
+//     console.log('puerto serial abierto');
+// });
+// mySerial.on('data', function(data){
+//     let binarios = data;    //buffers recividos
+//     let datosSerial = binarios.toString();  //Decodificacion a str
+//     let fin = datosSerial.search('\r\n');
+//     if(fin != -1){
+//         strdata = strdata + datosSerial;
+//         let indX = strdata.search('X');
+//         let indY = strdata.search('Y');
+//         let indZ = strdata.search('Z');
+//         let indArro = strdata.search('@');
+//         PosX = Number(strdata.slice(indX+2,indY-1));
+//         PosY = Number(strdata.slice(indY+2,indZ-1));
+//         PosZ = Number(strdata.slice(indZ+2,indArro-1));
+//         let indT = strdata.search('T');
+//         let indTf = strdata.search('/');
+//         Tb = Number(strdata.slice(indT+2,indTf-1));
+//         strdata = '';
+//     }
+//     else{
+//         strdata = strdata + datosSerial;
+//     };
+// });
+// mySerial.on('err', function(err){
+//     console.log("Fallo con la conexion serial");
+// });
+// setInterval(()=>{
+//     mySerial.write("M114 M105\r\n");
+// },5000);
 
 /* --- Comunicacion I2C --- */
 
