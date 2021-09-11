@@ -15,11 +15,11 @@ gcodes = 'inicial';
 
 /* --- CONSTANTES DEL SERVIDOR UA ---*/
 const endpointUrl = "opc.tcp://" + require("os").hostname() + ":4334/UA/ImpresoraServer";
-const nodeIdToMonitor = "ns=1;i=1056";    //pos x
-const nodeIdToMonitor2 = "ns=1;i=1090";   //pos y
-const nodeIdToMonitor3 = "ns=1;i=1118";   //pos z
-const nodeIdToMonitor4 = "ns=1;i=1147";   //Tb
-const nodeIdToMonitor5 = "ns=1;i=1148";   //Te
+const nodeIdToMonitor = "ns=1;i=1103";    //pos x
+const nodeIdToMonitor2 = "ns=1;i=1137";   //pos y
+const nodeIdToMonitor3 = "ns=1;i=1171";   //pos z
+const nodeIdToMonitor4 = "ns=1;i=1194";   //Tb
+const nodeIdToMonitor5 = "ns=1;i=1195";   //Te
 
 /* --- CONSTASTES MONGO DB ---*/
 const uri = "mongodb+srv://lianju:Yuligb1996@cluster0.z4spe.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
