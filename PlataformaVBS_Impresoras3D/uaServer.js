@@ -8,7 +8,7 @@ const SerialPort = require('serialport');
 /* --- VARIABLES GLOBALES --- */
 PosX = ''; PosY = ''; PosZ = '';
 Tb = ''; Te = '';    // Tb: temperatura base, Te: temperatura extrusor
-strdata = '';
+P = ''; I = ''; D = '';
 const I4AAS = "Opc.Ua.I4AAS.NodeSet2.xml"
 
 /* --- ACCESO DE USUARIOS --- */
@@ -144,39 +144,106 @@ const userManager = {
         
         const CncAxisList = addressSpace.findNode("ns=1;i=1052");   // nivel inferior del CncInterface instanciado
         const CncAxisExtrusor = CncAxisType.instantiate({
-            browseName: "Eje Extrusor",
+            browseName: "E:Extrusor",
             componentOf: CncAxisList,
         });
         const CncAxisX = CncAxisType.instantiate({
-            browseName: "Eje X",
+            browseName: "X",
             componentOf: CncAxisList,
         });
         const CncAxisY = CncAxisType.instantiate({
-            browseName: "Eje Y",
+            browseName: "Y:Base",
             componentOf: CncAxisList,
         });
         const CncAxisZ = CncAxisType.instantiate({
-            browseName: "Eje Z",
+            browseName: "Z",
             componentOf: CncAxisList,
         });
-
+        
         /* --- VARIABLES ADICIONALES --- */
         const TempBase = namespace.addVariable({
-            componentOf: opc40502,
+            componentOf: CncAxisY,
             browseName: "T base",
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: Tb })
+                get: () => new Variant({ dataType: DataType.Double, value: Tb+40*Math.random()})
             },
         });
         const TempExtr = namespace.addVariable({
-            componentOf: opc40502,
+            componentOf: CncAxisExtrusor,
             browseName: "T extrusor",
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: Te })
+                get: () => new Variant({ dataType: DataType.Double, value: Te+40*Math.random()})
             },
         });
+
+        const Parametros = namespace.addObject({
+            browseName: "Parametros",
+            componentOf: opc40502
+        });
+        const Dfilamento = namespace.addVariable({
+            browseName: "Df",
+            description: "Diametro del filamento",
+            dataType: "Double",
+            componentOf: Parametros
+        });
+        const stepsmm = namespace.addVariable({
+            browseName: "StepsUnit",
+            description: "Pasos por unidad",
+            dataType: "Double",
+            componentOf: Parametros
+        });
+        const MaxFeedrates = namespace.addVariable({
+            browseName: "MaxFeedrates",
+            description: "Velocidad máxima de avance",
+            dataType: "Double",
+            componentOf: Parametros
+        });
+        const MaxAceleracion = namespace.addVariable({
+            browseName: "MaxAceleracion",
+            description: "Aceleración máxima",
+            dataType: "Double",
+            componentOf: Parametros
+        });
+        const DefaultPLA = namespace.addVariable({
+            browseName: "DefaultPLA",
+            description: "Parametros por defecto para impresion con PLA",
+            dataType: "Double",
+            componentOf: Parametros
+        });
+        const PID_Hottend = namespace.addObject({
+            browseName: "PID_Hottend",
+            description: "Parametros PID por defecto para hottend",
+            componentOf: Parametros
+        });
+        const P_Hottend = namespace.addVariable({
+            browseName: "P",
+            description: "Valor proporcional",
+            componentOf: PID_Hottend,
+            dataType: "Double",
+            value: {
+                get: () => new Variant({ dataType: DataType.Double, value: P})
+            }
+        })
+        const I_Hottend = namespace.addVariable({
+            browseName: "I",
+            description: "Valor integral",
+            componentOf: PID_Hottend,
+            dataType: "Double",
+            value: {
+                get: () => new Variant({ dataType: DataType.Double, value: I})
+            }
+        })
+        const D_Hottend = namespace.addVariable({
+            browseName: "D",
+            description: "Valor derivado",
+            componentOf: PID_Hottend,
+            dataType: "Double",
+            value: {
+                get: () => new Variant({ dataType: DataType.Double, value: D})
+            }
+        })
 
         /* --- BUSCAR NODOS A MAPEAR --- */
         /* --- Submodelo cnc --- */
@@ -191,7 +258,6 @@ const userManager = {
         const MimeType = addressSpace.findNode("ns=1;i=1026");
         const Value = addressSpace.findNode("ns=1;i=1027");
         const Size = addressSpace.findNode("ns=1;i=1031");
-
 
         /* --- MAPEAR VARIABLES --- */
         /* --- mapeo unico ---*/
@@ -229,7 +295,7 @@ const userManager = {
         });
         method.bindMethod((inputArguments,context,callback) => {
             const inCode =  inputArguments[0].value;
-            mySerial.write(inCode);
+            port.write(inCode);
             const callMethodResult = {
                 statusCode: StatusCodes.Good,
                 outputArguments: [{
@@ -276,16 +342,73 @@ const parser = new SerialPort.parsers.Readline()
 port.pipe(parser)
 
 parser.on('data', (line)=>{
-    let echo = line.search('echo')
-    if(echo == -1){
-        let indT = line.search('T');
-        let indTf = line.search('/');
-        Te = Number(line.slice(indT+2,indTf-1));
-        let indB = line.search('B');
-        let indBf = line.search('@');
-        Tb = Number(line.slice(indB+2,indBf-7));
+    if(line.search('echo') != -1){
+        if(line.search('G21 ') != -1){      // Unidades en [mm]
+            unit = 'mm'
+            // console.log('unidades en',unit);
+        }
+        else if(line.search('G20 ') != -1){      // Diametro del filamento [in]
+            unit = 'in'
+            // console.log('unidades en',unit);
+        }
+        else if(line.search('M149') != -1){      // unidades de las temperaturas
+            if(line.search('C') != -1){
+                unitT = 'C'
+                // console.log('Temperaturas en',unitT);
+            }
+            else if(line.search('F') != -1){
+                unitT = 'F'
+                // console.log('Temperaturas en',unitT);
+            }
+            else{
+                unitT = 'K'
+                // console.log('Temperaturas en',unitT);
+            }
+            
+        }
+        else if(line.search('M200') != -1){      // Diametro del filamento [unit] 
+            Df = line.slice(line.search('D')+1,)
+            // console.log('Df',Df);
+        }
+        else if(line.search('M92') != -1){      // Pasos por unidad [pasos/unit]
+            PasosmmX = line.slice(line.search('X')+1,line.search('Y')-1);
+            PasosmmY = line.slice(line.search('Y')+1,line.search('Z')-1);
+            PasosmmZ = line.slice(line.search('Z')+1,line.search('E')-1);
+            PasosmmE = line.slice(line.search('E')+1,);
+            // console.log('PasosmmX',PasosmmX,'PasosmmY',PasosmmY,'PasosmmZ',PasosmmZ,'PasosmmE',PasosmmE);
+        }   
+        else if(line.search('M203') != -1){     // Velocidad maxima de avance [unit/s]
+            VmaxX = line.slice(line.search('X')+1,line.search('Y')-1);
+            VmaxY = line.slice(line.search('Y')+1,line.search('Z')-1);
+            VmaxZ = line.slice(line.search('Z')+1,line.search('E')-1);
+            VmaxE = line.slice(line.search('E')+1,);
+            // console.log('VmaxX',VmaxX,'VmaxY',VmaxY,'VmaxZ',VmaxZ,'VmaxE',VmaxE);
+        }
+        else if(line.search('M201') != -1){     // Aceleracion maxima [unit/s2]
+            AmaxX = line.slice(line.search('X')+1,line.search('Y')-1);
+            AmaxY = line.slice(line.search('Y')+1,line.search('Z')-1);
+            AmaxZ = line.slice(line.search('Z')+1,line.search('E')-1);
+            AmaxE = line.slice(line.search('E')+1,);
+            // console.log('AmaxX',AmaxX,'AmaxY',AmaxY,'AmaxZ',AmaxZ,'AmaxE',AmaxE);
+        }
+        else if(line.search('M204') != -1){     // Aceleraciones de impresion, retraccion y viaje [unit/s2]
+            APrint = line.slice(line.search('P')+1,line.search('R')-1);
+            Aretract = line.slice(line.search('R')+1,line.search('T')-1);
+            Atravel = line.slice(line.search('T')+1,);
+            // console.log('APrint',APrint,'Aretract',Aretract,'Atravel',Atravel);
+        }
+        else if(line.search('M301') != -1){     // Parametros PID
+            P = line.slice(line.search('P')+1,line.search('I')-1);
+            I = line.slice(line.search('I')+1,line.search('D')-1);
+            D = line.slice(line.search('D')+1,);
+            // console.log('P',P,'I',I,'D',D);
+        }
+    }
+    else{
+        Te = Number(line.slice(line.search('T')+2,line.search('/')-1));
+        Tb = Number(line.slice(line.search('B')+2,line.search('@')-7));
         // console.log("Tb =",Tb);
-        // console.log("Te =",Te);     
+        // console.log("Te =",Te);
     }
     
     console.log(line);
@@ -300,14 +423,16 @@ port.on('err', function(err){
     console.log("Fallo con la conexion serial");
 });
 
-// setTimeout(()=>{
-//     port.write("G28\r\n");   // Mandar a home
-// },6000)
+setTimeout(()=>{
+    // port.write("G28\r\n");   // Mandar a home (comandos sin \r\n no funcionan )
+    // port.write("M155 S4\r\n");  // Pedir temperaturas cada 4 segundos (Evita errores en la impresion)
+    port.write("M115\r\n")      // Informacion del Firmware
+},8000)
 
 
 // setInterval(()=>{
-// //     // port.write("M114 \r\n");   // Pedir posiciones
-//     port.write("M105 \r\n");  // Pedir temperaturas
+//     port.write("M114 \r\n");   // Pedir posiciones 
+//     // port.write("M105 \r\n");  // Pedir temperaturas
 // },1000)
 
 

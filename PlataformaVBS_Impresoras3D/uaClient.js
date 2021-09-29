@@ -15,11 +15,8 @@ gcodes = 'inicial';
 
 /* --- CONSTANTES DEL SERVIDOR UA ---*/
 const endpointUrl = "opc.tcp://" + require("os").hostname() + ":4334/UA/ImpresoraServer";
-const nodeIdToMonitor = "ns=1;i=1103";    //pos x
-const nodeIdToMonitor2 = "ns=1;i=1137";   //pos y
-const nodeIdToMonitor3 = "ns=1;i=1171";   //pos z
-const nodeIdToMonitor4 = "ns=1;i=1194";   //Tb
-const nodeIdToMonitor5 = "ns=1;i=1195";   //Te
+const nodeIdToMonitorTb = "ns=1;i=1194";   //Tb
+const nodeIdToMonitorTe = "ns=1;i=1195";   //Te
 
 /* --- CONSTASTES MONGO DB ---*/
 const uri = "mongodb+srv://lianju:Yuligb1996@cluster0.z4spe.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
@@ -57,32 +54,14 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     /* --- INICIO DEL MONITOREO DE VARIABLES UA --- */
     
     /* --- DEFINIR ITEMS MONITOREABLES --- */
-    const itemToMonitor = {
-      nodeId: nodeIdToMonitor,
-      AttributeIds: AttributeIds.Value
-    };
-    const itemToMonitor2 = {
-      nodeId: nodeIdToMonitor2,
-      AttributeIds: AttributeIds.Value
-    };
-    const itemToMonitor3 = {
-      nodeId: nodeIdToMonitor3,
-      AttributeIds: AttributeIds.Value
-    };
-    const itemToMonitor4 = {
-      nodeId: nodeIdToMonitor4,
-      AttributeIds: AttributeIds.Value
-    };
-    const itemToMonitor5 = {
-      nodeId: nodeIdToMonitor5,
-      AttributeIds: AttributeIds.Value
-    };
+    const itemToMonitorTb = {nodeId: nodeIdToMonitorTb, AttributeIds: AttributeIds.Value};
+    const itemToMonitorTe = {nodeId: nodeIdToMonitorTe, AttributeIds: AttributeIds.Value};
 
     /* --- FUNCION GLOBAL PARA INVOCAR METODO --- */
     Gcode = () => { 
       session.call([{
-        objectId: "ns=1;i=1004",
-        methodId: "ns=1;i=1149",
+        objectId: "ns=1;i=1051",    // nodeId del componentOf
+        methodId: "ns=1;i=1206",    // nodeIde del metodo
         inputArguments: [
           new Variant({dataType: DataType.String, value: gcodes})
         ]
@@ -101,98 +80,45 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     };
 
     /* --- INICIAR MONITOREO POR SUBSCRIBCION --- */
-    const monitoredItem = await subscription.monitor(itemToMonitor, parameters, TimestampsToReturn.Both);
-    const monitoredItem2 = await subscription.monitor(itemToMonitor2, parameters, TimestampsToReturn.Both);
-    const monitoredItem3 = await subscription.monitor(itemToMonitor3, parameters, TimestampsToReturn.Both);
-    const monitoredItem4 = await subscription.monitor(itemToMonitor4, parameters, TimestampsToReturn.Both);
-    const monitoredItem5 = await subscription.monitor(itemToMonitor5, parameters, TimestampsToReturn.Both);
+    const monitoredItemTb = await subscription.monitor(itemToMonitorTb, parameters, TimestampsToReturn.Both);
+    const monitoredItemTe = await subscription.monitor(itemToMonitorTe, parameters, TimestampsToReturn.Both);
 
     /* --- CONEXION A LA BASE DE DATOS --- */
     await clientmongo.connect();
     const collection = clientmongo.db("VarImpresora3D").collection("Historial de datos");
 
     /* --- ACTUALIZACION DE VARIABLES --- */
-    monitoredItem.on("changed", (dataValue) => {
+    
+    monitoredItemTb.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
       collection.insertOne({
-        Variable: "Pos x",
+        Variable: "Tb",
         valor: dataValue.value.value, 
         tiempo: dataValue.serverTimestamp
       });
-      
-      /* --- ACTUALIZACION EN APP WEB --- */
-      io.sockets.emit("PosX", {
-        value: dataValue.value.value,
-        timestamp: dataValue.serverTimestamp,
-        nodeId: nodeIdToMonitor,
-        browseName: "Pos x"
-      });
-    });
-    
-    monitoredItem2.on("changed", (dataValue) => {
-      /* --- ACTUALIZACION EN MONGO --- */
-      // collection.insertOne({
-      //   Variable: "Pos y",
-      //   valor: dataValue.value.value, 
-      //   tiempo: dataValue.serverTimestamp
-      // });
-
-      /* --- ACTUALIZACION EN APP WEB --- */
-      io.sockets.emit("PosY", {
-        value: dataValue.value.value,
-        timestamp: dataValue.serverTimestamp,
-        nodeId: nodeIdToMonitor,
-        browseName: "Pos y"
-      });
-    });
-
-    monitoredItem3.on("changed", (dataValue) => {
-      /* --- ACTUALIZACION EN MONGO --- */
-      // collection.insertOne({
-      //   Variable: "Pos z",
-      //   valor: dataValue.value.value, 
-      //   tiempo: dataValue.serverTimestamp
-      // });
-
-      /* --- ACTUALIZACION EN APP WEB --- */
-      io.sockets.emit("PosZ", {
-        value: dataValue.value.value,
-        timestamp: dataValue.serverTimestamp,
-        nodeId: nodeIdToMonitor,
-        browseName: "Pos z"
-      });
-    });
-    
-    monitoredItem4.on("changed", (dataValue) => {
-      /* --- ACTUALIZACION EN MONGO --- */
-      // collection.insertOne({
-      //   Variable: "Tb",
-      //   valor: dataValue.value.value, 
-      //   tiempo: dataValue.serverTimestamp
-      // });
 
       /* --- ACTUALIZACION EN APP WEB --- */
       io.sockets.emit("Tb", {
         value: dataValue.value.value,
         timestamp: dataValue.serverTimestamp,
-        nodeId: nodeIdToMonitor,
+        nodeId: nodeIdToMonitorTb,
         browseName: "Tb"
       });
     });
 
-    monitoredItem5.on("changed", (dataValue) => {
+    monitoredItemTe.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-      // collection.insertOne({
-      //   Variable: "Te",
-      //   valor: dataValue.value.value, 
-      //   tiempo: dataValue.serverTimestamp
-      // });
+      collection.insertOne({
+        Variable: "Te",
+        valor: dataValue.value.value, 
+        tiempo: dataValue.serverTimestamp
+      });
 
       /* --- ACTUALIZACION EN APP WEB --- */
       io.sockets.emit("Te", {
         value: dataValue.value.value,
         timestamp: dataValue.serverTimestamp,
-        nodeId: nodeIdToMonitor,
+        nodeId: nodeIdToMonitorTe,
         browseName: "Te"
       });
       if ((dataValue.value.value) > 49){
