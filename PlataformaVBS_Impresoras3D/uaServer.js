@@ -1,45 +1,42 @@
 /*--- IMPORTACION DE MODULOS --- */
+
 const { OPCUAServer, DataType, nodesets,StatusCodes, Variant } = require("node-opcua");
 const chalk = require("chalk");
 const SerialPort = require('serialport');
 // const raspi = require('raspi');
 // const I2C = require('raspi-i2c').I2C;
 
+
 /* --- VARIABLES GLOBALES --- */
+
 PosX = ''; PosY = ''; PosZ = '';
 Tb = ''; Te = '';    // Tb: temperatura base, Te: temperatura extrusor
-P = ''; I = ''; D = '';
+P = ''; I = ''; D = ''; S = '';     // PID hottend y variable de simulacion
+Df = ''; PasosE = ''; PasosX = ''; PasosY = ''; PasosZ = ''; VmaxX = '';
+VmaxY = ''; VmaxZ = ''; VmaxE = ''; AmaxE = ''; AmaxX = ''; AmaxY = ''; AmaxZ = '';
 const I4AAS = "Opc.Ua.I4AAS.NodeSet2.xml"
 
 /* --- ACCESO DE USUARIOS --- */
+
 const userManager = {
     isValidUser: function(userName, password) {
-  
-      if (userName === "julian" && password === "1234") {
-        return true;
-      }
-      if (userName === "user2" && password === "password2") {
-        return true;
-      }
-      return false;
-    }
-};
+        if (userName === "julian" && password === "1234") {return true;}
+        if (userName === "user2" && password === "password2") {return true;}
+        return false;}
+    };
 
 /* --- SERVIDOR UA ASINCRONO --- */
+
 (async () => {
     try {
         /* --- PARAMETROS DEL SERVIDOR --- */
+
         const server = new OPCUAServer({
-            /* --- ESPECIFICASIONES UA --- */
-            nodeset_filename: [
-                nodesets.standard, nodesets.cnc, nodesets.di, I4AAS
-            ],
-            serverInfo: {
-                applicationName: { text: "Servidor ImpresoraFDM", locale: "es" },
-            },
+            nodeset_filename: [nodesets.standard, nodesets.cnc, nodesets.di, I4AAS],    // Especificaciones UA
+            serverInfo: {applicationName: { text: "Servidor ImpresoraFDM", locale: "es" },},
             userManager: userManager,
-            port: 4334, // puerto del servidor
-            resourcePath: "/UA/ImpresoraServer", // this path will be added to the endpoint resource name
+            port: 4334,     // puerto del servidor
+            resourcePath: "/UA/ImpresoraServer",    // this path will be added to the endpoint resource name
             buildInfo : {
                 productName: "ServidorImpresorasFDM",
                 buildNumber: "7658",
@@ -48,6 +45,7 @@ const userManager = {
         });
 
         /* --- CONSTRUCCION DEL ESPACIO DE DIRECCIONES ---*/
+
         await server.initialize();
         const addressSpace = server.engine.addressSpace;    // generar addressSpace inicial
         const nsCnc = addressSpace.getNamespaceIndex("http://opcfoundation.org/UA/CNC");    // NS DEL CNC(URI)
@@ -56,6 +54,7 @@ const userManager = {
         const namespace = addressSpace.getOwnNamespace("http://opcfoundation.org/UA/");   // Crear nuestro namespace(NS) 
 
         /* --- BUSCAR OBJECTYPES A INSTANCIAR --- */
+
         const CncInterfaceType = addressSpace.findObjectType("CncInterfaceType",nsCnc);
         const CncAxisType = addressSpace.findObjectType("CncAxisType",nsCnc);
         const AASAssetAdministrationShellType = addressSpace.findObjectType("AASAssetAdministrationShellType",nsAAS);
@@ -69,6 +68,7 @@ const userManager = {
         const FileType = addressSpace.findObjectType("FileType", 0);
         
         /* --- BUSCAR nodos A INSTANCIAR --- */
+
         const AssetId = addressSpace.findNode("ns=3;i=15049",nsDI);
         const Manufacturer = addressSpace.findNode("ns=3;i=15036",nsDI);
         const ManufacturerUri = addressSpace.findNode("ns=3;i=15037",nsDI);
@@ -79,21 +79,20 @@ const userManager = {
         const Name = addressSpace.findNode("ns=4;i=6066",nsAAS);
         const ShortName = Name.clone()
         
-        /* --- ESPACIO PARA INSTANCIAR, CREAR Y MAPEAR (OBJETOS, VARIABLES, METODOS) --- */
-        
+
+        /* --- ESPACIO PARA INSTANCIAR, CREAR Y MAPEAR (OBJETOS, VARIABLES, METODOS) --- */    
         /* --- ESTRUCTURACION DEL AAS ---*/
-        const AASROOT = namespace.addFolder(addressSpace.rootFolder.objects,{
-            browseName: "AASROOT"
-        });
+
+        const AASROOT = namespace.addFolder(addressSpace.rootFolder.objects,{browseName: "AASROOT"});
         const AAS = AASAssetAdministrationShellType.instantiate({
             browseName: "AssetAdministrationShell:Impresora3D",
             organizedBy: AASROOT, 
         });
         AAS.addReference({referenceType: "HasComponent", nodeId: DerivedFrom.clone()});
         AAS.addReference({referenceType: "HasProperty", nodeId: ShortName});
-        AAS.addReference({referenceType: "HasInterface",nodeId: IAASIdentifiableType});
+        AAS.addReference({referenceType: "HasInterface", nodeId: IAASIdentifiableType});
 
-        const Asset = addressSpace.findNode("ns=1;i=1003")
+        const Asset = addressSpace.findNode("ns=1;i=1003");
         const Identification = AASIdentifierType.instantiate({
             browseName: "Identification",
             organizedBy: Asset
@@ -136,7 +135,9 @@ const userManager = {
             componentOf: AAS,
         });
 
+
         /* --- SUBMODELO CNC ---*/ 
+
         const opc40502 = CncInterfaceType.instantiate({
             browseName: "Submodel:OperationalData",
             componentOf: AAS,
@@ -161,12 +162,13 @@ const userManager = {
         });
         
         /* --- VARIABLES ADICIONALES --- */
+
         const TempBase = namespace.addVariable({
             componentOf: CncAxisY,
             browseName: "T base",
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: Tb+40*Math.random()})
+                get: () => new Variant({ dataType: DataType.Double, value: Tb+S})
             },
         });
         const TempExtr = namespace.addVariable({
@@ -174,7 +176,7 @@ const userManager = {
             browseName: "T extrusor",
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: Te+40*Math.random()})
+                get: () => new Variant({ dataType: DataType.Double, value: Te+S})
             },
         });
 
@@ -186,25 +188,107 @@ const userManager = {
             browseName: "Df",
             description: "Diametro del filamento",
             dataType: "Double",
+            value: {get: () => new Variant({ dataType: DataType.Double, value: Df})},
             componentOf: Parametros
         });
-        const stepsmm = namespace.addVariable({
+        const steps = namespace.addObject({
             browseName: "StepsUnit",
             description: "Pasos por unidad",
-            dataType: "Double",
             componentOf: Parametros
         });
-        const MaxFeedrates = namespace.addVariable({
+        const stepsX = namespace.addVariable({
+            browseName: "stepsX",
+            description: "Pasos por unidad eje x",
+            dataType: "Double",
+            value: {get: () => new Variant({ dataType: DataType.Double, value: PasosX})},
+            componentOf: steps
+        });
+        const stepsY = namespace.addVariable({
+            browseName: "stepsY",
+            description: "Pasos por unidad eje y",
+            dataType: "Double",
+            value: {get: () => new Variant({ dataType: DataType.Double, value: PasosY})},
+            componentOf: steps
+        });
+        const stepsZ = namespace.addVariable({
+            browseName: "stepsZ",
+            description: "Pasos por unidad eje z",
+            dataType: "Double",
+            value: {get: () => new Variant({ dataType: DataType.Double, value: PasosZ})},
+            componentOf: steps
+        });
+        const stepsE = namespace.addVariable({
+            browseName: "stepsE",
+            description: "Pasos por unidad eje E",
+            dataType: "Double",
+            value: {get: () => new Variant({ dataType: DataType.Double, value: PasosE})},
+            componentOf: steps
+        });
+        const MaxFeedrates = namespace.addObject({
             browseName: "MaxFeedrates",
             description: "Velocidad máxima de avance",
-            dataType: "Double",
             componentOf: Parametros
         });
-        const MaxAceleracion = namespace.addVariable({
+        const MaxFeedratesX = namespace.addVariable({
+            browseName: "MaxFeedratesX",
+            description: "Velocidad máxima de avance eje X",
+            dataType: "Double",
+            value: {get: () => new Variant({ dataType: DataType.Double, value: VmaxX})},
+            componentOf: MaxFeedrates
+        });
+        const MaxFeedratesY = namespace.addVariable({
+            browseName: "MaxFeedratesY",
+            description: "Velocidad máxima de avance eje Y",
+            dataType: "Double",
+            value: {get: () => new Variant({ dataType: DataType.Double, value: VmaxY})},
+            componentOf: MaxFeedrates
+        });
+        const MaxFeedratesZ = namespace.addVariable({
+            browseName: "MaxFeedratesZ",
+            description: "Velocidad máxima de avance eje Z",
+            dataType: "Double",
+            value: {get: () => new Variant({ dataType: DataType.Double, value: VmaxZ})},
+            componentOf: MaxFeedrates
+        });
+        const MaxFeedratesE = namespace.addVariable({
+            browseName: "MaxFeedratesE",
+            description: "Velocidad máxima de avance eje E",
+            dataType: "Double",
+            value: {get: () => new Variant({ dataType: DataType.Double, value: VmaxE})},
+            componentOf: MaxFeedrates
+        });
+        const MaxAceleracion = namespace.addObject({
             browseName: "MaxAceleracion",
             description: "Aceleración máxima",
-            dataType: "Double",
             componentOf: Parametros
+        });
+        const MaxAceleracionX = namespace.addVariable({
+            browseName: "MaxAceleracionX",
+            description: "Aceleración máxima eje X",
+            dataType: "Double",
+            value: {get: () => new Variant({ dataType: DataType.Double, value: AmaxX})},
+            componentOf: MaxAceleracion
+        });
+        const MaxAceleracionY = namespace.addVariable({
+            browseName: "MaxAceleracionY",
+            description: "Aceleración máxima eje Y",
+            dataType: "Double",
+            value: {get: () => new Variant({ dataType: DataType.Double, value: AmaxY})},
+            componentOf: MaxAceleracion
+        });
+        const MaxAceleracionZ = namespace.addVariable({
+            browseName: "MaxAceleracionZ",
+            description: "Aceleración máxima eje Z",
+            dataType: "Double",
+            value: {get: () => new Variant({ dataType: DataType.Double, value: AmaxZ})},
+            componentOf: MaxAceleracion
+        });
+        const MaxAceleracionE = namespace.addVariable({
+            browseName: "MaxAceleracionE",
+            description: "Aceleración máxima eje E",
+            dataType: "Double",
+            value: {get: () => new Variant({ dataType: DataType.Double, value: AmaxE})},
+            componentOf: MaxAceleracion
         });
         const DefaultPLA = namespace.addVariable({
             browseName: "DefaultPLA",
@@ -245,12 +329,16 @@ const userManager = {
             }
         })
 
+
         /* --- BUSCAR NODOS A MAPEAR --- */
         /* --- Submodelo cnc --- */
+
         const ActPosX = addressSpace.findNode("ns=1;i=1103");
         const ActPosY = addressSpace.findNode("ns=1;i=1137");
         const ActPosZ = addressSpace.findNode("ns=1;i=1171");
+        
         /* --- Submodelo I4AAS --- */
+
         const AssetKind = addressSpace.findNode("ns=1;i=1004");
         const Id = addressSpace.findNode("ns=1;i=1008");
         const IdType = addressSpace.findNode("ns=1;i=1009");
@@ -261,6 +349,7 @@ const userManager = {
 
         /* --- MAPEAR VARIABLES --- */
         /* --- mapeo unico ---*/
+
         AssetKind.setValueFromSource({ dataType: "Int32", value:1});      
         Id.setValueFromSource({ dataType: "String", value: "Ej: http://customer.com/assets/KHBVZJSQKIY"});
         IdType.setValueFromSource({ dataType: "Int32", value:1});
@@ -271,6 +360,7 @@ const userManager = {
         // ShortName.setValueFromSource({dataType: "String", value: "ES;Impresora3D"})
 
         /* --- mapeo actualizable ---*/
+
         setInterval(() => {
             ActPosX.setValueFromSource({dataType: "Double", value: PosX})
             ActPosY.setValueFromSource({dataType: "Double", value: PosY})
@@ -278,6 +368,7 @@ const userManager = {
         }, 500);
 
         /* --- CREAR METODOS ---*/
+
         const method = namespace.addMethod(opc40502,{
             browseName: "Write Serial",
             inputArguments:  [
@@ -308,14 +399,17 @@ const userManager = {
         });
         
         /* --- ESPERAR CONFIGURACION DEL SERVIDOR PARA COMENZAR A EXPONERSE ---*/
+
         await server.start();
         const endpointUrl = server.getEndpointUrl();  // obtener informacion del punto de acceso
 
         /* --- MOSTRAR INFORMACION DEL SERVIDOR --- */
+
         console.log(chalk.yellow("  endpointUrl         :"), chalk.cyan(endpointUrl));
         console.log(chalk.yellow("\n  server now waiting for connections. CTRL+C to stop"));
 
         /* --- PROCESO DE SALIDA O PARADA DEL SERVIDOR --- */
+
         process.on("SIGINT", async () => {
             // only work on linux apparently
             await server.shutdown(1000);
@@ -325,13 +419,17 @@ const userManager = {
     }
     catch(err){
         /* --- CODIGO DE EJECUCION SI OCURRE UN ERROR EN EL BLOQUE TRY --- */
+
         console.log(chalk.bgRed.white("Error" + err.message));
         console.log(err);
         process.exit(-1);
     }
 })();
 
+
+
 /* --- APP COMUNICACION SERIAL ---*/
+
 const port = new SerialPort(
     "COM3",
     {baudRate: 115200}
@@ -347,7 +445,7 @@ parser.on('data', (line)=>{
             unit = 'mm'
             // console.log('unidades en',unit);
         }
-        else if(line.search('G20 ') != -1){      // Diametro del filamento [in]
+        else if(line.search('G20 ') != -1){      // Unidades en [in]
             unit = 'in'
             // console.log('unidades en',unit);
         }
@@ -371,10 +469,10 @@ parser.on('data', (line)=>{
             // console.log('Df',Df);
         }
         else if(line.search('M92') != -1){      // Pasos por unidad [pasos/unit]
-            PasosmmX = line.slice(line.search('X')+1,line.search('Y')-1);
-            PasosmmY = line.slice(line.search('Y')+1,line.search('Z')-1);
-            PasosmmZ = line.slice(line.search('Z')+1,line.search('E')-1);
-            PasosmmE = line.slice(line.search('E')+1,);
+            PasosX = line.slice(line.search('X')+1,line.search('Y')-1);
+            PasosY = line.slice(line.search('Y')+1,line.search('Z')-1);
+            PasosZ = line.slice(line.search('Z')+1,line.search('E')-1);
+            PasosE = line.slice(line.search('E')+1,);
             // console.log('PasosmmX',PasosmmX,'PasosmmY',PasosmmY,'PasosmmZ',PasosmmZ,'PasosmmE',PasosmmE);
         }   
         else if(line.search('M203') != -1){     // Velocidad maxima de avance [unit/s]
@@ -410,7 +508,7 @@ parser.on('data', (line)=>{
         // console.log("Tb =",Tb);
         // console.log("Te =",Te);
     }
-    
+ 
     console.log(line);
 })
 
@@ -434,6 +532,11 @@ setTimeout(()=>{
 //     port.write("M114 \r\n");   // Pedir posiciones 
 //     // port.write("M105 \r\n");  // Pedir temperaturas
 // },1000)
+
+/* --- SIMULACION DE CAMBIO DE TEMPERATURAS POR SEGUNDO --- */
+setInterval(() => {
+    S = 40*Math.random()
+}, 1000);
 
 
 

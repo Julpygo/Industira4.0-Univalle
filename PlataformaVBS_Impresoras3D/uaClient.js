@@ -1,4 +1,5 @@
 /*--- IMPORTACION DE MODULOS --- */
+
 const { OPCUAClient, AttributeIds, TimestampsToReturn, Variant, DataType} = require("node-opcua");
 const MongoClient = require('mongodb').MongoClient;
 const {cyan, bgRed, yellow} = require("chalk");
@@ -10,26 +11,33 @@ var fs = require('fs');
 var EventEmitter = require('events')
 
 /* --- CREACION DE VARIABLES INICIALES --- */
+
 var event = new EventEmitter();
 gcodes = 'inicial';
 
 /* --- CONSTANTES DEL SERVIDOR UA ---*/
+
 const endpointUrl = "opc.tcp://" + require("os").hostname() + ":4334/UA/ImpresoraServer";
 const nodeIdToMonitorTb = "ns=1;i=1194";   //Tb
 const nodeIdToMonitorTe = "ns=1;i=1195";   //Te
+const nodeIdToMonitorP = "ns=1;i=1215";   //P
+const nodeIdToMonitorI = "ns=1;i=1216";   //I
+const nodeIdToMonitorD = "ns=1;i=1217";   //D
 
 /* --- CONSTASTES MONGO DB ---*/
+
 const uri = "mongodb+srv://lianju:Yuligb1996@cluster0.z4spe.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
 const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopology: true});
 
 
 /* --- CLIENTE UA --- */
+
 (async () => {
   try {
-    /* --- CREAR CLIENTE UA --- */
-    const client = OPCUAClient.create();
+    const client = OPCUAClient.create();    // crear cliente UA
 
-    /* --- INFORMACION DE RECONEXION --- */
+    /* --- EVENTO DE RECONEXION --- */
+
     client.on("backoff", (retry, delay) => {
       console.log("Intentando conectarse a ", endpointUrl,
       ": Intento =", retry,
@@ -37,42 +45,39 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     });
 
     /* --- INFORMACION DE CONEXION --- */
+
     await client.connect(endpointUrl);
     console.log(" Conectado a ", cyan(endpointUrl));
 
     /* --- CREAR SESSION DE CONEXION UA --- */
+
     const session = await client.createSession();
     console.log(yellow("Sesion iniciada"));
 
+    /* --- CONEXION A LA BASE DE DATOS --- */
+
+    await clientmongo.connect();
+    const collection = clientmongo.db("VarImpresora3D").collection("Historial de datos");    
+
+
     /* --- CREAR SUBSCRIBCION --- */
+
     const subscription = await session.createSubscription2({
       requestedPublishingInterval: 200,   //intervalo de tiempo en el cual se publica la solicitud
       requestedMaxKeepAliveCount: 20,     //intentos maximos para recuperar la conexion
       publishingEnabled: true,            //habilitar la publicacion
     });
 
-    /* --- INICIO DEL MONITOREO DE VARIABLES UA --- */
-    
-    /* --- DEFINIR ITEMS MONITOREABLES --- */
+    /* --- DEFINIR ITEMS A MONITOREAR --- */
+
     const itemToMonitorTb = {nodeId: nodeIdToMonitorTb, AttributeIds: AttributeIds.Value};
     const itemToMonitorTe = {nodeId: nodeIdToMonitorTe, AttributeIds: AttributeIds.Value};
+    const itemToMonitorP = {nodeId: nodeIdToMonitorP, AttributeIds: AttributeIds.Value};
+    const itemToMonitorI = {nodeId: nodeIdToMonitorI, AttributeIds: AttributeIds.Value};
+    const itemToMonitorD = {nodeId: nodeIdToMonitorD, AttributeIds: AttributeIds.Value};
 
-    /* --- FUNCION GLOBAL PARA INVOCAR METODO --- */
-    Gcode = () => { 
-      session.call([{
-        objectId: "ns=1;i=1051",    // nodeId del componentOf
-        methodId: "ns=1;i=1206",    // nodeIde del metodo
-        inputArguments: [
-          new Variant({dataType: DataType.String, value: gcodes})
-        ]
-      }],function(err,callResults) {
-      if (!err) {
-        const callResult = callResults[0];
-      }});
-    };
-    /* --- */
+    /* --- DEFINIR PARAMETROS DE SUSCRIPCION --- */
 
-    /* --- DEFINIR PARAMETROS DE MONITOREO --- */
     const parameters = {
       samplingInterval: 50,   //tiempo de muestreo 
       discardOldest: true,    //descartar datos anteriores 
@@ -80,47 +85,53 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     };
 
     /* --- INICIAR MONITOREO POR SUBSCRIBCION --- */
+
     const monitoredItemTb = await subscription.monitor(itemToMonitorTb, parameters, TimestampsToReturn.Both);
     const monitoredItemTe = await subscription.monitor(itemToMonitorTe, parameters, TimestampsToReturn.Both);
+    const monitoredItemP = await subscription.monitor(itemToMonitorP, parameters, TimestampsToReturn.Both);
+    const monitoredItemI = await subscription.monitor(itemToMonitorI, parameters, TimestampsToReturn.Both);
+    const monitoredItemD = await subscription.monitor(itemToMonitorD, parameters, TimestampsToReturn.Both);
+    
 
-    /* --- CONEXION A LA BASE DE DATOS --- */
-    await clientmongo.connect();
-    const collection = clientmongo.db("VarImpresora3D").collection("Historial de datos");
-
-    /* --- ACTUALIZACION DE VARIABLES --- */
+    /* --- ACTUALIZACION DE VARIABLES EN MONGO Y EN APP WEB --- */
     
     monitoredItemTb.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-      collection.insertOne({
-        Variable: "Tb",
-        valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp
-      });
+
+      // collection.insertOne({
+      //   Variable: "Tb",
+      //   valor: dataValue.value.value, 
+      //   tiempo: dataValue.serverTimestamp
+      // });
 
       /* --- ACTUALIZACION EN APP WEB --- */
+
       io.sockets.emit("Tb", {
         value: dataValue.value.value,
         timestamp: dataValue.serverTimestamp,
-        nodeId: nodeIdToMonitorTb,
         browseName: "Tb"
       });
     });
 
     monitoredItemTe.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-      collection.insertOne({
-        Variable: "Te",
-        valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp
-      });
+
+      // collection.insertOne({
+      //   Variable: "Te",
+      //   valor: dataValue.value.value, 
+      //   tiempo: dataValue.serverTimestamp
+      // });
 
       /* --- ACTUALIZACION EN APP WEB --- */
+
       io.sockets.emit("Te", {
         value: dataValue.value.value,
         timestamp: dataValue.serverTimestamp,
-        nodeId: nodeIdToMonitorTe,
         browseName: "Te"
       });
+
+      /* --- REGISTRO DE ERRORES DETECTADOS POR ALGORITMO --- */
+
       if ((dataValue.value.value) > 49){
         var logger = fs.createWriteStream('log.txt', {
           flags: 'a' // 'a' means appending (old data will be preserved) 
@@ -135,9 +146,78 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
       }
     });
 
+    monitoredItemP.on("changed", (dataValue) => {
+      /* --- ACTUALIZACION EN MONGO --- */
+
+      collection.insertOne({
+        Variable: "P",
+        valor: dataValue.value.value, 
+        tiempo: dataValue.serverTimestamp
+      });
+
+      /* --- ACTUALIZACION EN APP WEB --- */
+
+      io.sockets.emit("P", {
+        value: dataValue.value.value,
+        timestamp: dataValue.serverTimestamp,
+        browseName: "P"
+      });
+    });
+    
+    monitoredItemI.on("changed", (dataValue) => {
+      /* --- ACTUALIZACION EN MONGO --- */
+
+      collection.insertOne({
+        Variable: "I",
+        valor: dataValue.value.value, 
+        tiempo: dataValue.serverTimestamp
+      });
+
+      /* --- ACTUALIZACION EN APP WEB --- */
+
+      io.sockets.emit("I", {
+        value: dataValue.value.value,
+        timestamp: dataValue.serverTimestamp,
+        browseName: "I"
+      });
+    });
+
+    monitoredItemD.on("changed", (dataValue) => {
+      /* --- ACTUALIZACION EN MONGO --- */
+
+      collection.insertOne({
+        Variable: "D",
+        valor: dataValue.value.value, 
+        tiempo: dataValue.serverTimestamp
+      });
+
+      /* --- ACTUALIZACION EN APP WEB --- */
+
+      io.sockets.emit("D", {
+        value: dataValue.value.value,
+        timestamp: dataValue.serverTimestamp,
+        browseName: "D"
+      });
+    });
+
+    /* --- FUNCION GLOBAL PARA INVOCAR METODO --- */
+
+    Gcode = () => { 
+      session.call([{
+        objectId: "ns=1;i=1051",    // nodeId del componentOf
+        methodId: "ns=1;i=1218",    // nodeIde del metodo
+        inputArguments: [
+          new Variant({dataType: DataType.String, value: gcodes})
+        ]
+      }],function(err,callResults) {
+      if (!err) {
+        const callResult = callResults[0];
+      }});
+    };
 
 
     /* --- SALIR AL PRESIONAR CTRL + C --- */
+
     let running = true;
     process.on("SIGINT", async () => {
       if (!running){
@@ -155,19 +235,23 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
   }
   catch(err){
     /* --- CODIGO DE EJECUCION SI OCURRE UN ERROR EN EL BLOQUE TRY --- */
+
     console.log(bgRed.white("Error" + err.message));
     console.log(err);
     process.exit(-1);
   }
 })();   //FUNCION EJECUTADA EN BUCLE
 
-/* --- CREAR LA APLICACION WEB ---  */
 
+
+/* --- CREAR LA APLICACION WEB ---  */
 /* --- CONSTANTES APP WEB ---*/
+
 const port = 3000;
 const app = express();
 
 /* --- CONFIGURACIONES --- */
+
 app.set('port', process.env.PORT || port);
 app.set("view engine", "html");
 app.use(express.urlencoded({extended: false}));
@@ -175,21 +259,25 @@ app.use(express.json());
 app.use(require('./PlataformaWeb/rutas/index'));
 
 /*--- DIRECTORIOS ESTATICOS --- */ 
+
 app.use(express.static(path.join(__dirname, 'PlataformaWeb')));
 app.set('Views', __dirname + '/');
 
 /* --- RENDERIZADO DE PAGINA INICIAL --- */
+
 app.get("/", function(req,res){
   res.sendFile('index.html');
 });
 
 
 /* --- INICIAR SERVIDOR WEB --- */
+
 const server = app.listen(app.get('port'), ()=> {
   console.log('server on port ', app.get('port'));
 });
 
 /* --- WEBSOCKETS --- */
+
 const io = SocketIO(server);
 io.on('connection', (socket) => {
   console.log('new conexion',socket.id);
@@ -201,38 +289,39 @@ io.on('connection', (socket) => {
 });
 
 /* --- MOSTRAR DIRECCION WEB --- */
+
 console.log("visit http://localhost:" + port); 
 
 
-/* --- NOTIFICADOR --- */
 
+/* --- NOTIFICADOR DE ERROR --- */
 /* --- CREAR OBJETO REUTILIZABLE SMTP  --- */
-// let transporter = nodemailer.createTransport({
-//   service: 'gmail',
-//   auth: {
-//     user: 'gomez.julian@correounivalle.edu.co', // generated ethereal user 
-//     pass: 'gqwr xkdn xalw uyog', // generated ethereal password 
-//   },
-// });
-// event.on("Alarm Te", (data) => {
-//   var mailOptions = {
-//     from: 'gomez.julian@correounivalle.edu.co',
-//     to: 'julian-gomes@outlook.com',
-//     subject: 'Alarma prueba',
-//     text: `
-//     Se ha detectado una anomalia en su Impresora 3D.
-//     Si deseas autorizar una revision de esta para garantizar su
-//     optimo funcionamiento u obtener mas información. 
+let transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'gomez.julian@correounivalle.edu.co', // generated ethereal user 
+    pass: 'gqwr xkdn xalw uyog', // generated ethereal password 
+  },
+});
+event.on("Alarm Te", (data) => {
+  var mailOptions = {
+    from: 'gomez.julian@correounivalle.edu.co',
+    to: 'julian-gomes@outlook.com',
+    subject: 'Alarma prueba',
+    text: `
+    Se ha detectado una anomalia en su Impresora 3D.
+    Si deseas autorizar una revision de esta para garantizar su
+    optimo funcionamiento u obtener mas información. 
     
-//     HAZ CLIC EN EL SIGUIENTE ENLACE  http://localhost:3000/autorizacion.html
-//     Los datos pedidos en el enlace son los siguientes:
-//     Tipo: ${data.tipo}, Tiempo: ${data.tiempo}`
-//   };
-//   transporter.sendMail(mailOptions, function(error, info){
-//     if (error) {
-//       console.log(error);
-//     } else {
-//       console.log('Email enviado: ' + info.response);
-//     }
-//   });
-// })
+    HAZ CLIC EN EL SIGUIENTE ENLACE  http://localhost:3000/autorizacion.html
+    Los datos pedidos en el enlace son los siguientes:
+    Tipo: ${data.tipo}, Tiempo: ${data.tiempo}`
+  };
+  transporter.sendMail(mailOptions, function(error, info){
+    if (error) {
+      console.log(error);
+    } else {
+      console.log('Email enviado: ' + info.response);
+    }
+  });
+})
