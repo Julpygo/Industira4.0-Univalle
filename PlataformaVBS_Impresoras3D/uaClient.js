@@ -23,6 +23,7 @@ const nodeIdToMonitorTe = "ns=1;i=1195";   //Te
 const nodeIdToMonitorP = "ns=1;i=1215";   //P
 const nodeIdToMonitorI = "ns=1;i=1216";   //I
 const nodeIdToMonitorD = "ns=1;i=1217";   //D
+const nodeIdToMonitorErr = "ns=1;i=1219";   // Error
 
 /* --- CONSTASTES MONGO DB ---*/
 
@@ -75,6 +76,7 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     const itemToMonitorP = {nodeId: nodeIdToMonitorP, AttributeIds: AttributeIds.Value};
     const itemToMonitorI = {nodeId: nodeIdToMonitorI, AttributeIds: AttributeIds.Value};
     const itemToMonitorD = {nodeId: nodeIdToMonitorD, AttributeIds: AttributeIds.Value};
+    const itemToMonitorErr = {nodeId: nodeIdToMonitorErr, AttributeIds: AttributeIds.Value};
 
     /* --- DEFINIR PARAMETROS DE SUSCRIPCION --- */
 
@@ -91,6 +93,7 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     const monitoredItemP = await subscription.monitor(itemToMonitorP, parameters, TimestampsToReturn.Both);
     const monitoredItemI = await subscription.monitor(itemToMonitorI, parameters, TimestampsToReturn.Both);
     const monitoredItemD = await subscription.monitor(itemToMonitorD, parameters, TimestampsToReturn.Both);
+    const monitoredItemErr = await subscription.monitor(itemToMonitorErr, parameters, TimestampsToReturn.Both);
     
 
     /* --- ACTUALIZACION DE VARIABLES EN MONGO Y EN APP WEB --- */
@@ -129,21 +132,6 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
         timestamp: dataValue.serverTimestamp,
         browseName: "Te"
       });
-
-      /* --- REGISTRO DE ERRORES DETECTADOS POR ALGORITMO --- */
-
-      if ((dataValue.value.value) > 49){
-        var logger = fs.createWriteStream('log.txt', {
-          flags: 'a' // 'a' means appending (old data will be preserved) 
-        })
-        logger.write(`{var:"T del extrusor" , t:${dataValue.serverTimestamp}, v:${dataValue.value.value}, a:"Valor muy alto"},`) // append string to your file
-        logger.end() // close string 
-        event.emit("Alarm Te", {
-          tiempo:dataValue.serverTimestamp,
-          valor:dataValue.value.value,
-          tipo: "Te"
-      });
-      }
     });
 
     monitoredItemP.on("changed", (dataValue) => {
@@ -197,6 +185,22 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
         value: dataValue.value.value,
         timestamp: dataValue.serverTimestamp,
         browseName: "D"
+      });
+    });
+
+    /* --- REGISTRO DE ERRORES EN LA BASE DE DATOS --- */
+
+    monitoredItemErr.on("changed", (dataValue) => {
+      /* --- ACTUALIZACION EN MONGO --- */
+
+      collection.insertOne({
+        Variable: "Error",
+        valor: dataValue.value.value, 
+        tiempo: dataValue.serverTimestamp
+      });
+      event.emit("Error", {
+        tiempo:dataValue.serverTimestamp,
+        valor:dataValue.value.value,
       });
     });
 
@@ -300,10 +304,10 @@ let transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: 'gomez.julian@correounivalle.edu.co', // generated ethereal user 
-    pass: 'gqwr xkdn xalw uyog', // generated ethereal password 
+    pass: 'ovgr wuhq eahx yqhg', // generated ethereal password 
   },
 });
-event.on("Alarm Te", (data) => {
+event.on("Error", (data) => {
   var mailOptions = {
     from: 'gomez.julian@correounivalle.edu.co',
     to: 'julian-gomes@outlook.com',
@@ -314,8 +318,8 @@ event.on("Alarm Te", (data) => {
     optimo funcionamiento u obtener mas información. 
     
     HAZ CLIC EN EL SIGUIENTE ENLACE  http://localhost:3000/autorizacion.html
-    Los datos pedidos en el enlace son los siguientes:
-    Tipo: ${data.tipo}, Tiempo: ${data.tiempo}`
+    EL valor solicitado es:
+     Tiempo: ${data.tiempo}`
   };
   transporter.sendMail(mailOptions, function(error, info){
     if (error) {

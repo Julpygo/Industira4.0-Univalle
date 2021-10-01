@@ -14,6 +14,7 @@ Tb = ''; Te = '';    // Tb: temperatura base, Te: temperatura extrusor
 P = ''; I = ''; D = ''; S = '';     // PID hottend y variable de simulacion
 Df = ''; PasosE = ''; PasosX = ''; PasosY = ''; PasosZ = ''; VmaxX = '';
 VmaxY = ''; VmaxZ = ''; VmaxE = ''; AmaxE = ''; AmaxX = ''; AmaxY = ''; AmaxZ = '';
+errImp = ''; T = '';
 const I4AAS = "Opc.Ua.I4AAS.NodeSet2.xml"
 
 /* --- ACCESO DE USUARIOS --- */
@@ -57,6 +58,7 @@ const userManager = {
 
         const CncInterfaceType = addressSpace.findObjectType("CncInterfaceType",nsCnc);
         const CncAxisType = addressSpace.findObjectType("CncAxisType",nsCnc);
+        const CncAlarmType = addressSpace.findObjectType("CncAlarmType",nsCnc);
         const AASAssetAdministrationShellType = addressSpace.findObjectType("AASAssetAdministrationShellType",nsAAS);
         const AASReferenceType = addressSpace.findObjectType("AASReferenceType",nsAAS);
         const AASSubmodelType = addressSpace.findObjectType("AASSubmodelType",nsAAS);
@@ -168,7 +170,7 @@ const userManager = {
             browseName: "T base",
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: Tb+S})
+                get: () => new Variant({ dataType: DataType.Double, value: Tb})
             },
         });
         const TempExtr = namespace.addVariable({
@@ -176,7 +178,7 @@ const userManager = {
             browseName: "T extrusor",
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: Te+S})
+                get: () => new Variant({ dataType: DataType.Double, value: Te})
             },
         });
 
@@ -328,6 +330,19 @@ const userManager = {
                 get: () => new Variant({ dataType: DataType.Double, value: D})
             }
         })
+
+        const Alarm = namespace.addObject({
+            browseName: "Alarmas",
+            componentOf: opc40502,
+        });
+        const Error = namespace.addVariable({
+            browseName: "Error",
+            componentOf: Alarm,
+            dataType: "String",
+            value: {
+                get: () => new Variant({ dataType: DataType.String, value: errImp})
+            }
+        });
 
 
         /* --- BUSCAR NODOS A MAPEAR --- */
@@ -501,6 +516,10 @@ parser.on('data', (line)=>{
             D = line.slice(line.search('D')+1,);
             // console.log('P',P,'I',I,'D',D);
         }
+        else if(line.search('Error') != -1){     // Mensaje de error impresora
+            errImp = line;
+            // console.log('error impresora',errImp,);
+        }
     }
     else{
         Te = Number(line.slice(line.search('T')+2,line.search('/')-1));
@@ -523,8 +542,9 @@ port.on('err', function(err){
 
 setTimeout(()=>{
     // port.write("G28\r\n");   // Mandar a home (comandos sin \r\n no funcionan )
-    // port.write("M155 S4\r\n");  // Pedir temperaturas cada 4 segundos (Evita errores en la impresion)
-    port.write("M115\r\n")      // Informacion del Firmware
+    T = 'Prueba'
+    port.write("M155 S4\r\n");  // Pedir temperaturas cada 4 segundos (Evita errores en la impresion)
+    // port.write("M115\r\n")      // Informacion del Firmware
 },8000)
 
 

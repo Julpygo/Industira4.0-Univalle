@@ -7,32 +7,31 @@ transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: 'gomez.julian@correounivalle.edu.co', // generated ethereal user
-    pass: 'gqwr xkdn xalw uyog', // generated ethereal password
+    pass: 'ovgr wuhq eahx yqhg', // generated ethereal password
   },
 });
 
 router.post('/autorizacion', (req, res) => {
-    const {respuesta, tipo, tiempo} = req.body;
+    const {respuesta, tiempo} = req.body;
 
-    contentHTML = `
-        <h1>Informacion de la falla</h1>
-        <ul>
-            <li>respuesta: ${respuesta}</li>
-            <li>tipo: ${tipo}</li>
-            <li>tiempo: ${tiempo}</li>
-        </ul>
-        <h2>para aceptar el contrato da clic en el siguiente enlace: http://localhost:3000/contrato.html <h2>
-        <h2>Para accedar a la base de datos en mongo db utilice la siguiente clave de api: hbpdvmtc <h2>
-        <h2>Ingrese a la plataforma para gestionar la falla con el siguiente link: http://localhost:3000/
-    `;
-
-    res.send('recibido');
+    if(respuesta === 'SI'){
+      contentHTML = `
+          <h1>Informacion de la falla</h1>
+          <ul>
+              <li>respuesta: ${respuesta}</li>
+              <li>tiempo: ${tiempo}</li>
+          </ul>
+          <h2>para aceptar el contrato da clic en el siguiente enlace: http://localhost:3000/contrato.html <h2>
+          <h2>Para accedar a la base de datos en mongo db utilice la siguiente clave de api: hbpdvmtc <h2>
+          <h2>Ingrese a la plataforma para gestionar la falla con el siguiente link: http://localhost:3000/
+      `;
+      res.send('recibido');
       
       var mailOptions = {
-          from: 'gomez.julian@correounivalle.edu.co',
-          to: 'gomez.julian@correounivalle.edu.co',
-          subject: 'Reporte de falla',
-          html: contentHTML
+        from: 'gomez.julian@correounivalle.edu.co',
+        to: 'gomez.julian@correounivalle.edu.co',
+        subject: 'Reporte de falla',
+        html: contentHTML
       };
       
       transporter.sendMail(mailOptions, function(error, info){
@@ -42,6 +41,10 @@ router.post('/autorizacion', (req, res) => {
             console.log('Email enviado: ' + info.response);
           }
       });
+    }
+    else {
+      res.send('Recibido')
+    }
 });
 
 router.post('/contrato', (req, res) =>{

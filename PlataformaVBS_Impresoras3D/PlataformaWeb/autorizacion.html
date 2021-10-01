@@ -5,15 +5,16 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <form action="/autorizacion" method="POST">
         <div align="center">
             <label>¿Autoriza usted la revision tecnica de su máquina?</label><br>
             <label>SI</label>
-            <input name="respuesta" type="radio" value="SI" checked><br>
-            <label>Tipo: </label>
-            <input type="text" name="tipo" size="20" placeholder="Tipo de falla"><br><br>
+            <input name="respuesta" type="radio" value="SI"><br>
+            <label>NO </label>
+            <input name="respuesta" type="radio" value="NO"><br><br>
             <label>Tiempo: </label>
             <input type="datetime" name="tiempo" size="20" placeholder="Ingrese tiempo"><br><br>
             <button>Enviar</button>
