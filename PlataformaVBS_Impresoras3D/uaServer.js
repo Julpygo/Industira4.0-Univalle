@@ -14,7 +14,7 @@ Tb = ''; Te = '';    // Tb: temperatura base, Te: temperatura extrusor
 P = ''; I = ''; D = ''; S = '';     // PID hottend y variable de simulacion
 Df = ''; PasosE = ''; PasosX = ''; PasosY = ''; PasosZ = ''; VmaxX = '';
 VmaxY = ''; VmaxZ = ''; VmaxE = ''; AmaxE = ''; AmaxX = ''; AmaxY = ''; AmaxZ = '';
-errImp = ''; T = '';
+errImp = ''; T = ''; Pm = '';
 const I4AAS = "Opc.Ua.I4AAS.NodeSet2.xml"
 
 /* --- ACCESO DE USUARIOS --- */
@@ -170,7 +170,7 @@ const userManager = {
             browseName: "T base",
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: Tb})
+                get: () => new Variant({ dataType: DataType.Double, value: Tb+S})
             },
         });
         const TempExtr = namespace.addVariable({
@@ -178,7 +178,7 @@ const userManager = {
             browseName: "T extrusor",
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: Te})
+                get: () => new Variant({ dataType: DataType.Double, value: Te+S})
             },
         });
 
@@ -309,7 +309,7 @@ const userManager = {
             componentOf: PID_Hottend,
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: P})
+                get: () => new Variant({ dataType: DataType.Double, value: P+Pm})
             }
         })
         const I_Hottend = namespace.addVariable({
@@ -318,7 +318,7 @@ const userManager = {
             componentOf: PID_Hottend,
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: I})
+                get: () => new Variant({ dataType: DataType.Double, value: I+Pm})
             }
         })
         const D_Hottend = namespace.addVariable({
@@ -327,7 +327,7 @@ const userManager = {
             componentOf: PID_Hottend,
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: D})
+                get: () => new Variant({ dataType: DataType.Double, value: D+Pm})
             }
         })
 
@@ -340,7 +340,7 @@ const userManager = {
             componentOf: Alarm,
             dataType: "String",
             value: {
-                get: () => new Variant({ dataType: DataType.String, value: errImp})
+                get: () => new Variant({ dataType: DataType.String, value: errImp+T})
             }
         });
 
@@ -542,8 +542,9 @@ port.on('err', function(err){
 
 setTimeout(()=>{
     // port.write("G28\r\n");   // Mandar a home (comandos sin \r\n no funcionan )
-    T = 'Prueba'
-    port.write("M155 S4\r\n");  // Pedir temperaturas cada 4 segundos (Evita errores en la impresion)
+    T = 'Prueba';
+    Pm = 30*Math.random();
+    // port.write("M155 S4\r\n");  // Pedir temperaturas cada 4 segundos (Evita errores en la impresion)
     // port.write("M115\r\n")      // Informacion del Firmware
 },8000)
 
@@ -555,8 +556,8 @@ setTimeout(()=>{
 
 /* --- SIMULACION DE CAMBIO DE TEMPERATURAS POR SEGUNDO --- */
 setInterval(() => {
-    S = 40*Math.random()
-}, 1000);
+    S = 60*Math.random()
+}, 5000);
 
 
 

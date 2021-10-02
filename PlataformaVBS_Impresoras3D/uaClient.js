@@ -53,13 +53,7 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     /* --- CREAR SESSION DE CONEXION UA --- */
 
     const session = await client.createSession();
-    console.log(yellow("Sesion iniciada"));
-
-    /* --- CONEXION A LA BASE DE DATOS --- */
-
-    await clientmongo.connect();
-    const collection = clientmongo.db("VarImpresora3D").collection("Historial de datos");    
-
+    console.log(yellow("Sesion iniciada"));   
 
     /* --- CREAR SUBSCRIBCION --- */
 
@@ -95,17 +89,21 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     const monitoredItemD = await subscription.monitor(itemToMonitorD, parameters, TimestampsToReturn.Both);
     const monitoredItemErr = await subscription.monitor(itemToMonitorErr, parameters, TimestampsToReturn.Both);
     
+    /* --- CONEXION A LA BASE DE DATOS --- */
+
+    await clientmongo.connect();
+    const collection = clientmongo.db("VarImpresora3D").collection("Historial de datos"); 
 
     /* --- ACTUALIZACION DE VARIABLES EN MONGO Y EN APP WEB --- */
     
     monitoredItemTb.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
 
-      // collection.insertOne({
-      //   Variable: "Tb",
-      //   valor: dataValue.value.value, 
-      //   tiempo: dataValue.serverTimestamp
-      // });
+      collection.insertOne({
+        Variable: "Tb",
+        valor: dataValue.value.value, 
+        tiempo: dataValue.serverTimestamp
+      });
 
       /* --- ACTUALIZACION EN APP WEB --- */
 
@@ -119,11 +117,11 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     monitoredItemTe.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
 
-      // collection.insertOne({
-      //   Variable: "Te",
-      //   valor: dataValue.value.value, 
-      //   tiempo: dataValue.serverTimestamp
-      // });
+      collection.insertOne({
+        Variable: "Te",
+        valor: dataValue.value.value, 
+        tiempo: dataValue.serverTimestamp
+      });
 
       /* --- ACTUALIZACION EN APP WEB --- */
 
@@ -200,7 +198,7 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
       });
       event.emit("Error", {
         tiempo:dataValue.serverTimestamp,
-        valor:dataValue.value.value,
+        valor:dataValue.value.value
       });
     });
 

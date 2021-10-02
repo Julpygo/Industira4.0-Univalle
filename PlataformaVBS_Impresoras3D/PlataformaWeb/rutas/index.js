@@ -12,18 +12,15 @@ transporter = nodemailer.createTransport({
 });
 
 router.post('/autorizacion', (req, res) => {
-    const {respuesta, tiempo} = req.body;
+    const {respuesta, tiempo, ti_revision, tf_revision} = req.body;
 
     if(respuesta === 'SI'){
       contentHTML = `
-          <h1>Informacion de la falla</h1>
-          <ul>
-              <li>respuesta: ${respuesta}</li>
-              <li>tiempo: ${tiempo}</li>
-          </ul>
+          <h1>EL cliente de la impresora X ha solicitado un servicio tecnico debido a la ocurrecia de una falla 
+          el ${tiempo}. El horario disponible para revision de la maquina es (${ti_revision}-${tf_revision})</h1>
           <h2>para aceptar el contrato da clic en el siguiente enlace: http://localhost:3000/contrato.html <h2>
           <h2>Para accedar a la base de datos en mongo db utilice la siguiente clave de api: hbpdvmtc <h2>
-          <h2>Ingrese a la plataforma para gestionar la falla con el siguiente link: http://localhost:3000/
+          <h2>Ingrese a la plataforma para gestionar la falla con el siguiente link: http://localhost:3000/</h2>
       `;
       res.send('recibido');
       
@@ -56,7 +53,7 @@ router.post('/contrato', (req, res) =>{
     setTimeout(()=>{ 
       contentHTML2 = `
         <h2>Despues de realizar el diagnostico 
-        por favor realice la siguiente encuesta: http://localhost:3000/contrato.html <h2>
+        por favor realice la siguiente encuesta: http://localhost:3000/encuesta.html <h2>
     `;
       var mailOptions2 = {
           from: 'gomez.julian@correounivalle.edu.co',
@@ -80,6 +77,10 @@ router.post('/contrato', (req, res) =>{
   else {
     res.send("recibido")
   }
+});
+
+router.post('/autorizacion', (req, res) => {
+  res.send("recibido")
 });
 
 

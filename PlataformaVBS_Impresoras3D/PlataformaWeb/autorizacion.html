@@ -5,7 +5,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <form action="/autorizacion" method="POST">
@@ -15,11 +14,15 @@
             <input name="respuesta" type="radio" value="SI"><br>
             <label>NO </label>
             <input name="respuesta" type="radio" value="NO"><br><br>
-            <label>Tiempo: </label>
-            <input type="datetime" name="tiempo" size="20" placeholder="Ingrese tiempo"><br><br>
+            <label>Fecha de la falla: </label>
+            <input type="datetime" name="tiempo" size="30" placeholder="Ingrese fecha enviada al correo"><br><br>
+            <label>Por favor ingresar un rango de tiempo minimo de 2 horas donde no se utilizara la impresora. </label><br>
+            <label>Fecha inicio </label>
+            <input type="datetime-local" name="ti_revision" size="20" placeholder="Fecha inicial"><br><br>
+            <label>Fecha fin </label>
+            <input type="datetime-local" name="tf_revision" size="20" placeholder="Fecha final"><br><br>
             <button>Enviar</button>
         </div>
     </form>
-    
 </body>
 </html>
