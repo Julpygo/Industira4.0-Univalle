@@ -18,8 +18,8 @@ gcodes = 'inicial';
 /* --- CONSTANTES DEL SERVIDOR UA ---*/
 
 const endpointUrl = "opc.tcp://" + require("os").hostname() + ":4334/UA/ImpresoraServer";
-const nodeIdToMonitorTb = "ns=1;i=1194";   //Tb
-const nodeIdToMonitorTe = "ns=1;i=1195";   //Te
+const nodeIdToMonitorTb = "ns=1;i=1356";   //Tb
+const nodeIdToMonitorTe = "ns=1;i=1362";   //Te
 const nodeIdToMonitorP = "ns=1;i=1215";   //P
 const nodeIdToMonitorI = "ns=1;i=1216";   //I
 const nodeIdToMonitorD = "ns=1;i=1217";   //D

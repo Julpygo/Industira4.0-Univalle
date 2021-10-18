@@ -1,6 +1,7 @@
 /*--- IMPORTACION DE MODULOS --- */
 
-const { OPCUAServer, DataType, nodesets,StatusCodes, Variant, VariantArrayType} = require("node-opcua");
+const { OPCUAServer,DataType,nodesets,
+    StatusCodes,Variant,standardUnits} = require("node-opcua");
 const chalk = require("chalk");
 const SerialPort = require('serialport');
 // const raspi = require('raspi');
@@ -9,22 +10,24 @@ const SerialPort = require('serialport');
 
 /* --- VARIABLES GLOBALES --- */
 
-PosX = ''; PosY = ''; PosZ = '';
-Tb = ''; Te = '';    // Tb: temperatura base, Te: temperatura extrusor
-P = ''; I = ''; D = ''; S = '';     // PID hottend y variable de simulacion
-Df = ''; PasosE = ''; PasosX = ''; PasosY = ''; PasosZ = ''; VmaxX = '';
-VmaxY = ''; VmaxZ = ''; VmaxE = ''; AmaxE = ''; AmaxX = ''; AmaxY = ''; AmaxZ = '';
-errImp = ''; T = ''; Pm = '';
-const I4AAS = "Opc.Ua.I4AAS.NodeSet2.xml"
+Tb = ''; Te = '';   
+P = ''; I = ''; D = ''; S = ''; T = ''    // PID hottend 
+// Parametros
+Df = ''; PasosE = ''; PasosX = ''; PasosY = ''; PasosZ = ''; 
+VmaxX = ''; VmaxY = ''; VmaxZ = ''; VmaxE = ''; AmaxE = ''; 
+AmaxX = ''; AmaxY = ''; AmaxZ = ''; errImp = ''; Pm = '';
+const I4AAS = "Opc.Ua.I4AAS.NodeSet2.xml";
+
 
 /* --- ACCESO DE USUARIOS --- */
 
 const userManager = {
     isValidUser: function(userName, password) {
         if (userName === "julian" && password === "1234") {return true;}
-        if (userName === "user2" && password === "password2") {return true;}
+        if (userName === "user2" && password === "clave") {return true;}
         return false;}
     };
+
 
 /* --- SERVIDOR UA ASINCRONO --- */
 
@@ -33,32 +36,44 @@ const userManager = {
         /* --- PARAMETROS DEL SERVIDOR --- */
 
         const server = new OPCUAServer({
-            nodeset_filename: [nodesets.standard, nodesets.cnc, nodesets.di, I4AAS],    // Especificaciones UA
-            serverInfo: {applicationName: { text: "Servidor ImpresoraFDM", locale: "es" },},
-            userManager: userManager,
-            port: 4334,     // puerto del servidor
-            resourcePath: "/UA/ImpresoraServer",    // this path will be added to the endpoint resource name
+            nodeset_filename: [
+                nodesets.standard,
+                I4AAS,
+                nodesets.cnc,
+                nodesets.di,
+                nodesets.machinery],   
+            serverInfo: {applicationName: { 
+                text: "Servidor ImpresoraFDM", 
+                locale: "ES" }
+            },
+            userManager: userManager, 
+            port: 4334, resourcePath: "/UA/ImpresoraServer",   
             buildInfo : {
-                productName: "ServidorImpresorasFDM",
-                buildNumber: "7658",
-                buildDate: new Date(2021,1,16)
+                productName: "ServidorImpresorasFDM", 
+                buildNumber: "7658", buildDate: new Date(2021,1,16)
             }
         });
 
-        /* --- CONSTRUCCION DEL ESPACIO DE DIRECCIONES ---*/
+
+        /* --- DEFINICION DEL ESPACIO DE DIRECCIONES ---*/
 
         await server.initialize();
         const addressSpace = server.engine.addressSpace;    // generar addressSpace inicial
-        const nsCnc = addressSpace.getNamespaceIndex("http://opcfoundation.org/UA/CNC");    // NS DEL CNC(URI)
-        const nsDI = addressSpace.getNamespaceIndex("http://opcfoundation.org/UA/DI/");    // NS DE DI(URI)
-        const nsAAS = addressSpace.getNamespaceIndex("http://opcfoundation.org/UA/I4AAS/");    // NS DE I4AAS(URI)
-        const namespace = addressSpace.getOwnNamespace("http://opcfoundation.org/UA/");   // Crear nuestro namespace(NS) 
+        const namespace = addressSpace.getOwnNamespace("http://opcfoundation.org/UA/");   // Mi namespace(ns) 
+        const nsAAS = addressSpace.getNamespaceIndex("http://opcfoundation.org/UA/I4AAS/");  
+        const nsCnc = addressSpace.getNamespaceIndex("http://opcfoundation.org/UA/CNC");      
+        const nsDI = addressSpace.getNamespaceIndex("http://opcfoundation.org/UA/DI/");
+        const nsMachinery = addressSpace.getNamespaceIndex("http://opcfoundation.org/UA/Machinery/");
+
 
         /* --- BUSCAR OBJECTYPES A INSTANCIAR --- */
 
         /* --- Cnc ObjectTypes ---*/
         const CncInterfaceType = addressSpace.findObjectType("CncInterfaceType",nsCnc);
         const CncAxisType = addressSpace.findObjectType("CncAxisType",nsCnc);
+        const CncChannelType = addressSpace.findObjectType("CncChannelType",nsCnc);
+        const CncSpindleType = addressSpace.findObjectType("CncSpindleType",nsCnc);
+        const CncMessageType = addressSpace.findObjectType("CncMessageType",nsCnc);
         /* --- I4AAS ObjectTypes ---*/
         const AASAssetAdministrationShellType = addressSpace.findObjectType("AASAssetAdministrationShellType",nsAAS);
         const AASReferenceType = addressSpace.findObjectType("AASReferenceType",nsAAS);
@@ -68,78 +83,124 @@ const userManager = {
         const AASIdentifierType = addressSpace.findObjectType("AASIdentifierType",nsAAS);
         const AASFileType = addressSpace.findObjectType("AASFileType",nsAAS);
         const AASSubmodelElementCollectionType = addressSpace.findObjectType("AASSubmodelElementCollectionType",nsAAS);
-        const AASPropertyType = addressSpace.findObjectType("AASPropertyType",nsAAS)
-        const AASIrdiConceptDescriptionType = addressSpace.findObjectType('AASIrdiConceptDescriptionType',nsAAS)
-        const AASDataSpecificationIEC61360Type = addressSpace.findObjectType('AASDataSpecificationIEC61360Type',nsAAS)
+        const AASPropertyType = addressSpace.findObjectType("AASPropertyType",nsAAS);
+        const AASIrdiConceptDescriptionType = addressSpace.findObjectType('AASIrdiConceptDescriptionType',nsAAS);
+        const AASDataSpecificationIEC61360Type = addressSpace.findObjectType('AASDataSpecificationIEC61360Type',nsAAS);
+        const AASAdministrativeInformationType = addressSpace.findObjectType('AASAdministrativeInformationType',nsAAS);
         const FileType = addressSpace.findObjectType("FileType", 0);
-        // const AASKeyTypeDataType = addressSpace.findNode("ns=4;i=6108", nsAAS);
-        
-        /* --- BUSCAR nodos para clonar --- */
+        /* --- DI y Machinary Types ---*/
+        const ComponentType = addressSpace.findObjectType("ComponentType",nsDI);
+        const machineIdentificationType = addressSpace.findObjectType("MachineIdentificationType", nsMachinery);
 
-        const AssetId = addressSpace.findNode("ns=3;i=15049",nsDI);
-        const Manufacturer = addressSpace.findNode("ns=3;i=15036",nsDI);
-        const ManufacturerUri = addressSpace.findNode("ns=3;i=15037",nsDI);
-        const Model = addressSpace.findNode("ns=3;i=15038",nsDI);
-        const SerialNumber = addressSpace.findNode("ns=3;i=15045",nsDI);
-        const SoftwareRevision = addressSpace.findNode("ns=3;i=15040",nsDI);
-        const ShortName = addressSpace.findNode("ns=4;i=6066",nsAAS);
         
-
         /* --- ESPACIO PARA INSTANCIAR, CREAR Y MAPEAR (OBJETOS, VARIABLES, METODOS) --- */    
-        /* --- ESTRUCTURACION DEL AAS ---*/
+        
 
-        const AASROOT = namespace.addFolder(addressSpace.rootFolder.objects,{browseName: "AASROOT"});
+        /* --- MODELACION DEL AAS ---*/
+        const AASROOT = namespace.addFolder(addressSpace.rootFolder.objects,{
+            browseName: "AASROOT"
+        });
         const AAS = AASAssetAdministrationShellType.instantiate({
             browseName: "Impresora3dPRUSA",
             organizedBy: AASROOT,
             optionals:["DerivedFrom"]
         });
-        /* --- Añadir referencias al AAS ---*/
-        AAS.addReference({referenceType: "HasProperty", nodeId: ShortName.clone()});
-        AAS.addReference({referenceType: "HasInterface", nodeId: IAASIdentifiableType});
-
-        const IdentificationAAS = AASIdentifierType.instantiate({
-            browseName: "IdentificationAAS",
+        const AAS_Id= AASIdentifierType.instantiate({
+            browseName: "identification",
             componentOf: AAS
-        })
-        const IdentificationAsset = AASIdentifierType.instantiate({
-            browseName: "AssetIdentification",
+        });
+        const administration = AASAdministrativeInformationType.instantiate({
+            browseName: "administration",
+            componentOf: AAS,
+            optionals: ["Version","Revision"]
+        });
+        AAS.addReference({referenceType: "HasInterface", nodeId: IAASIdentifiableType});
+        /* --- MAPEO ---*/
+        AAS_Id.id.setValueFromSource({dataType: "String", 
+            value: "https://www.univalle.edu.co/eime/aas/1/1/AAS-3DPrinter"
+        });
+        AAS_Id.idType.setValueFromSource({dataType: "Int32", value:1});
+        administration.version.setValueFromSource({dataType: "String", value: "1"});
+        administration.revision.setValueFromSource({dataType: "String", value: "1"});
+
+
+        /* --- MODELACION DEL CONCEPTDICTIONARY ---*/
+        const AASConceptDictionary = AASConceptDictionaryType.instantiate({
+            browseName: "ConceptDictionary",
+            componentOf: AAS,
+        });
+        const DfilamentoDicc = AASIrdiConceptDescriptionType.instantiate({
+            browseName: "0173-1#01-AKH746#018",
+            componentOf: AASConceptDictionary
+        });
+
+
+        /* --- MODELACION DEL ASSET ---*/
+        const AssetId = AASIdentifierType.instantiate({
+            browseName: "identification",
             componentOf: AAS.asset.nodeId
-        })
+        });
         const AssetIdentificationModel = AASReferenceType.instantiate({
             browseName: "AssetIdentificationModel",
             componentOf: AAS.asset.nodeId
         });
-        const AASSubmodelID = AASSubmodelType.instantiate({
-            browseName: "IdentificationModel",
-            componentOf: AAS,
-            optionals:[
-                "SubmodelElement.IdShort"
-            ]
+        /* --- MAPEO ---*/
+        AssetId.id.setValueFromSource({dataType: "String", 
+            value: "https://impresoras3dcolombia.co/IP3DPRUSA"
         });
-        const IdentificationID = AASIdentifierType.instantiate({
-            browseName: "Identification",
-            componentOf: AASSubmodelID
-        })
+        AssetId.idType.setValueFromSource({dataType: "Int32", value:1});
+        AAS.asset.assetKind.setValueFromSource({dataType: "Int32", value:1});   
+        AAS.asset.assetIdentificationModel.keys.setValueFromSource({dataType: "String",
+            value: "(Submodel)[IRI]https://impresoras3dcolombia.co/IP3DPRUSA"    
+        });
 
-        /* --- Añadir referencias al Submodelo de identificacion ---*/
-        AssetIdentificationModel.addReference({referenceType: "ns=4;i=4003", nodeId: AASSubmodelID})
-        AASSubmodelID.addReference({referenceType: "HasProperty",nodeId: AssetId.clone()})
-        AASSubmodelID.addReference({referenceType: "HasProperty",nodeId: Manufacturer.clone()})
-        AASSubmodelID.addReference({referenceType: "HasProperty",nodeId: ManufacturerUri.clone()})
-        AASSubmodelID.addReference({referenceType: "HasProperty",nodeId: Model.clone()})
-        AASSubmodelID.addReference({referenceType: "HasProperty",nodeId: SerialNumber.clone()})
-        AASSubmodelID.addReference({referenceType: "HasProperty",nodeId: SoftwareRevision.clone()})
 
-        const AASSubmodelDoc = AASSubmodelType.instantiate({
-            browseName: "DocumentsModel",
+        /* --- MODELACION DEL SUBMODELO DE IDENTIFICACION ---*/
+        const SM_Identification = AASSubmodelType.instantiate({
+            browseName: "SubmodelIdentification",
+            componentOf: AAS
+        });
+        const SM_IdentificationId = AASIdentifierType.instantiate({
+            browseName: "identification",
+            componentOf: SM_Identification
+        });
+        SM_Identification.addReference({referenceType: "HasProperty", nodeId: ComponentType.assetId.clone()});
+        SM_Identification.addReference({referenceType: "HasProperty", nodeId: ComponentType.manufacturer.clone()});
+        SM_Identification.addReference({referenceType: "HasProperty", nodeId: ComponentType.manufacturerUri.clone()});
+        SM_Identification.addReference({referenceType: "HasProperty", nodeId: machineIdentificationType.location.clone()});
+        SM_Identification.addReference({referenceType: "HasProperty", nodeId: ComponentType.model.clone()});
+        SM_Identification.addReference({referenceType: "HasProperty", nodeId: ComponentType.hardwareRevision.clone()});
+        SM_Identification.addReference({referenceType: "HasProperty", nodeId: ComponentType.softwareRevision.clone()});
+        // AASSubmodelID.addReference({referenceType: "HasProperty", nodeId: machineIdentificationType.yearOfConstruction.clone()})
+        /* --- Establecer referencia no jerarquica con el AssetIdentificationModel ---*/
+        AssetIdentificationModel.addReference({referenceType: "ns=2;i=4003", nodeId: SM_Identification});
+        /* --- MAPEO ---*/
+        SM_Identification.assetId.setValueFromSource({dataType: "String", value: "IP3DPRUSA"});
+        SM_Identification.manufacturer.setValueFromSource({dataType:DataType.LocalizedText,value:[{locale: "es", text: " IP3D"}]});
+        SM_Identification.manufacturerUri.setValueFromSource({dataType: "String", value: "https://impresoras3dcolombia.co/"});
+        SM_Identification.location.setValueFromSource({dataType: "String", value: "Cali, Colombia"});
+        SM_Identification.model.setValueFromSource({dataType: DataType.LocalizedText, value: [{locale: "es", text: " Xmodelo"}]});
+        SM_Identification.hardwareRevision.setValueFromSource({dataType: "String", value: "n"});
+        SM_Identification.softwareRevision.setValueFromSource({dataType: "String", value: "n"});
+        SM_IdentificationId.id.setValueFromSource({dataType:"String",value:" https://impresoras3dcolombia.co/IP3DPRUSA"});
+        SM_IdentificationId.idType.setValueFromSource({dataType:"Int32",value: 1});
+        SM_Identification.modelingKind.setValueFromSource({dataType:"Int32",value: 1});
+        
+
+        /* --- MODELACION DEL SUBMODELO DE DOCUMENTOS ---*/
+        const SMDocuments = AASSubmodelType.instantiate({
+            browseName: "SubmodelDocuments",
             componentOf: AAS,
+        });
+        const SMDocumentsId = AASIdentifierType.instantiate({
+            browseName: "identification",
+            componentOf: SMDocuments
         });
         const OperationManual = AASSubmodelElementCollectionType.instantiate({
             browseName: "OperationManual",
-            componentOf: AASSubmodelDoc,
+            componentOf: SMDocuments,
             optionals:["AllowDuplicates"]
-        })
+        });
         const AASfile = AASFileType.instantiate({
             browseName: "DigitalFile_PDF",
             componentOf: OperationManual
@@ -147,62 +208,198 @@ const userManager = {
         const File = FileType.instantiate({
             browseName: "File",
             componentOf: AASfile
-        })
-        const AASConceptDictionary = AASConceptDictionaryType.instantiate({
-            browseName: "ConceptDictionary",
-            componentOf: AAS,
         });
+        /* --- MAPEO ---*/
+        AASfile.value.setValueFromSource({ dataType: "String", value: "creality-ender-3-3d-printer-manual.pdf"});
+        AASfile.mimeType.setValueFromSource({ dataType: "String", value: "application/pdf"});
+        File.size.setValueFromSource({dataType: "UInt64", value: 828480});
+        SMDocumentsId.id.setValueFromSource({dataType:"String",value:" url segun normativas"});
+        SMDocumentsId.idType.setValueFromSource({dataType:"Int32",value: 1});
 
 
-        /* --- SUBMODELO CNC ---*/ 
-        
-        const SubmodelOperational = AASSubmodelType.instantiate({
-            browseName: "OperationalDataModel",
+        /* --- MODELACION DEL SUBMODELO OPERATIONAL DATA ---*/
+        addressSpace.installAlarmsAndConditionsService();
+        const SMOperational = AASSubmodelType.instantiate({
+            browseName: "SubmodelOperationalData",
             componentOf: AAS
-        })
-        const opc40502 = CncInterfaceType.instantiate({
-            browseName: "CncInterface",
-            componentOf: SubmodelOperational,
         });
-        
+        const SMOperationalId = AASIdentifierType.instantiate({
+            browseName: "identification",
+            componentOf: SMOperational
+        });
+        const CncInterface = CncInterfaceType.instantiate({
+            browseName: "CncInterface",
+            componentOf: SMOperational,
+        });  
+        const CncChannel = CncChannelType.instantiate({
+            browseName: "Channel 1",
+            eventNotifier: 0x01,
+            componentOf: CncInterface.cncChannelList.nodeId
+        });
+        const CncSpindle = CncSpindleType.instantiate({
+            browseName: "Extrusor",
+            componentOf: CncInterface.cncSpindleList.nodeId
+        });
         const CncAxisExtrusor = CncAxisType.instantiate({
-            browseName: "E:Extrusor",
-            componentOf: opc40502.cncAxisList.nodeId
+            browseName: "E",
+            componentOf: CncInterface.cncAxisList.nodeId
         });
         const CncAxisX = CncAxisType.instantiate({
             browseName: "X",
-            componentOf: opc40502.cncAxisList.nodeId,
+            componentOf: CncInterface.cncAxisList.nodeId
         });
         const CncAxisY = CncAxisType.instantiate({
-            browseName: "Y:Base",
-            componentOf: opc40502.cncAxisList.nodeId,
+            browseName: "Y[B]",
+            componentOf: CncInterface.cncAxisList.nodeId
         });
         const CncAxisZ = CncAxisType.instantiate({
             browseName: "Z",
-            componentOf: opc40502.cncAxisList.nodeId,
+            componentOf: CncInterface.cncAxisList.nodeId
         });
-        
-        /* --- SUBMODELO DE DATOS TECNICOS --- */
-
-        const AASSubmodelTec = AASSubmodelType.instantiate({
-            browseName: "TecnhicalDataModel",
-            componentOf: AAS
-        })
-        const IdSubmodelTec = AASIdentifierType.instantiate({
-            browseName: "Identification",
-            componentOf: AASSubmodelTec
-        });
-        const Dfilamento = namespace.addVariable({
-            browseName: "Df",
-            description: {locale: "es", text: "Diametro del filamento"},
+        /* --- CREAR VARIABLES --- */
+        const TempBase = namespace.addAnalogDataItem({
+            componentOf: CncAxisY,
+            browseName: "TemperaturaBaseCaliente",
+            definition: "Temperatura de la base caliente",
+            valuePrecision: 0.01,
+            engineeringUnitsRange: { low: 100, high: 200 },
+            instrumentRange: { low: -100, high: +200 },
+            engineeringUnits: standardUnits.degree_celsius,
             dataType: "Double",
-            value: {get: () => new Variant({ dataType: DataType.Double, value: Df})},
-            componentOf: AASSubmodelTec
+            value: {
+                get: () => new Variant({ dataType: DataType.Double, value: Tb+S})
+            },
         });
+        const TempExtr = namespace.addAnalogDataItem({
+            componentOf: CncSpindle,
+            browseName: "TempExtrusor",
+            definition: "Temperatura del extrusor",
+            valuePrecision: 0.01,
+            engineeringUnitsRange: { low: 100, high: 200 },
+            instrumentRange: { low: -100, high: +200 },
+            engineeringUnits: standardUnits.degree_celsius,
+            dataType: "Double",
+            value: {
+                get: () => new Variant({ dataType: DataType.Double, value: Te+S})
+            },
+        });
+        const CncMessage = CncMessageType.instantiate({
+            browseName: "CncMessage",
+            notifierOf: addressSpace.rootFolder.objects.server,
+            organizedBy: SMOperational
+        });
+        const Error = namespace.addVariable({
+            browseName: "Error",
+            componentOf: CncChannel,
+            eventSourceOf: CncChannel,
+            dataType: "String",
+            value: {
+                get: () => new Variant({ dataType: DataType.String, value: errImp+T})
+            }
+        });
+        CncChannel.addReference({referenceType: "Organizes", nodeId:CncAxisExtrusor});
+        CncChannel.addReference({referenceType: "Organizes", nodeId:CncAxisX});
+        CncChannel.addReference({referenceType: "Organizes", nodeId:CncAxisY});
+        CncChannel.addReference({referenceType: "Organizes", nodeId:CncAxisZ});
+        CncChannel.addReference({referenceType: "Organizes", nodeId:CncSpindle});
+        CncChannel.addReference({referenceType: "GeneratesEvent",nodeId:CncMessage});
+        
+        /* --- CREAR METODOS ---*/
+        const method = namespace.addMethod(SMOperational,{
+            browseName: "Write Serial",
+            inputArguments:  [
+                {
+                    name:"Gcode, Mcode",
+                    description: { text: "Escribir codigo a enviar" },
+                    dataType: DataType.String
+                }
+            ],
+            outputArguments: [{
+                name:"Confirmacion",
+                description:{ text: "Confirmar envio" },
+                dataType: DataType.String ,
+            }]
+        });
+        method.bindMethod((inputArguments,context,callback) => {
+            const inCode =  inputArguments[0].value;
+            port.write(inCode);
+            const callMethodResult = {
+                statusCode: StatusCodes.Good,
+                outputArguments: [{
+                        dataType: DataType.String,
+                        value : "Codigo enviado"
+                }]
+            };
+            callback(null,callMethodResult);
+            console.log(inCode);
+        });
+        /* --- MAPEO ---*/
+        CncMessage.sourceNode.setValueFromSource({dataType: "NodeId",value: CncChannel.error.nodeId});
+        CncMessage.eventType.setValueFromSource({dataType: "NodeId",value: CncMessageType.nodeId});
+        CncMessage.sourceName.setValueFromSource({dataType: "String",value: "Mensaje de error"});
+        CncMessage.eventId.setValueFromSource({dataType: "String", value: "Interrupt errors"});
+        setInterval(()=>{
+            CncMessage.message.setValueFromSource({dataType: DataType.LocalizedText,value:{locale:"en",text: errImp+T}})
+        },5000);
+        SMOperationalId.id.setValueFromSource({dataType:"String",value:" url segun normativas"});
+        SMOperationalId.idType.setValueFromSource({dataType:"Int32",value: 1});
+        SMOperational.modelingKind.setValueFromSource({dataType:"Int32",value: 1});
+        
+
+        /* --- MODELACION DEL SUBMODELO TECHNICAL DATA ---*/
+        const SMTechnical = AASSubmodelType.instantiate({
+            browseName: "SubmodelTechnicalData",
+            componentOf: AAS
+        });
+        const SMTechnicalId = AASIdentifierType.instantiate({
+            browseName: "identification",
+            componentOf: SMTechnical
+        });
+        const Dfilamento = AASPropertyType.instantiate({
+            browseName: "DiametroFilamento",
+            componentOf: SMTechnical,
+            optionals: ["Value"]
+        });
+        Dfilamento.addReference({referenceType:"HasDictionaryEntry",nodeId: DfilamentoDicc});
+        Dfilamento.valueType.setValueFromSource({dataType: "Int32",value: 10});
+        Dfilamento.modelingKind.setValueFromSource({dataType: "Int32",value: 1});
+        Dfilamento.category.setValueFromSource({dataType: "String",value: "Parametro"});
+        Dfilamento.value.setValueFromSource({dataType: "Double",value: Df});    //meter en un setInterval
+        const DataSpecification = AASDataSpecificationIEC61360Type.instantiate({
+            browseName: "DataSpecification",
+            componentOf: Dfilamento,
+            optionals: ["Unit","Definition","DataType","Revision","Version"]
+        });
+        DataSpecification.identification.id.setValueFromSource({
+            dataType: "String",
+            value: "0112/2///61987#ABB961#001"
+        });
+        DataSpecification.identification.idType.setValueFromSource({
+            dataType: "Int32",
+            value: 0
+        });
+        DataSpecification.preferredName.setValueFromSource({
+            dataType: DataType.LocalizedText,
+            value: {locale:"EN",text:"size of orifice"}
+        });
+        DataSpecification.unit.setValueFromSource({
+            dataType: "String",
+            value: "mm"
+        });
+        DataSpecification.definition.setValueFromSource({
+            dataType: DataType.LocalizedText,
+            value:{locale:"EN",text:"internal diameter of a bore or orifice"}
+        });
+        DataSpecification.dataType.setValueFromSource({
+            dataType: "Int32",
+            value: 3
+        });
+        DfilamentoDicc.addReference({referenceType:"HasAddIn",nodeId:DataSpecification})
+        
         const steps = namespace.addObject({
             browseName: "StepsUnit",
             description: "Pasos por unidad",
-            componentOf: AASSubmodelTec
+            componentOf: SMTechnical
         });
         const stepsX = namespace.addVariable({
             browseName: "stepsX",
@@ -235,7 +432,7 @@ const userManager = {
         const MaxFeedrates = namespace.addObject({
             browseName: "MaxFeedrates",
             description: "Velocidad máxima de avance",
-            componentOf: AASSubmodelTec
+            componentOf: SMTechnical
         });
         const MaxFeedratesX = namespace.addVariable({
             browseName: "MaxFeedratesX",
@@ -268,7 +465,7 @@ const userManager = {
         const MaxAceleracion = namespace.addObject({
             browseName: "MaxAceleracion",
             description: "Aceleración máxima",
-            componentOf: AASSubmodelTec
+            componentOf: SMTechnical
         });
         const MaxAceleracionX = namespace.addVariable({
             browseName: "MaxAceleracionX",
@@ -302,12 +499,12 @@ const userManager = {
             browseName: "DefaultPLA",
             description: "Parametros por defecto para impresion con PLA",
             dataType: "Double",
-            componentOf: AASSubmodelTec
+            componentOf: SMTechnical
         });
         const PID_Hottend = namespace.addObject({
             browseName: "PID_Hottend",
             description: "Parametros PID por defecto para hottend",
-            componentOf: AASSubmodelTec
+            componentOf: SMTechnical
         });
         const P_Hottend = namespace.addVariable({
             browseName: "P",
@@ -336,112 +533,20 @@ const userManager = {
                 get: () => new Variant({ dataType: DataType.Double, value: D+Pm})
             }
         })
-        const dicDiam = AASIrdiConceptDescriptionType.instantiate({
-            browseName: "0173-1#01-AKH746#018",
-            componentOf: AASConceptDictionary
-        })
-        const DiamPrueba = AASPropertyType.instantiate({
-            browseName: "Diametro prueba",
-            componentOf: AASSubmodelTec,
-            optionals: ["Value"]
-        })
-        DiamPrueba.addReference({referenceType:"HasDictionaryEntry",nodeId: dicDiam})
-        const DataSpecification = AASDataSpecificationIEC61360Type.instantiate({
-            browseName: "DataSpecification",
-            componentOf: DiamPrueba
-        })
-        DataSpecification.identification.id.setValueFromSource({dataType:"String",value: "Prueba"})
-        // addressSpace.constructExtensionObject
-        dicDiam.addReference({referenceType:"HasAddIn",nodeId:DataSpecification})
+        /* --- MAPEO ---*/
+        SMTechnicalId.id.setValueFromSource({dataType:"String",value:" url segun normativas"});
+        SMTechnicalId.idType.setValueFromSource({dataType:"Int32",value: 1});
+        SMTechnical.modelingKind.setValueFromSource({dataType:"Int32",value: 1});
 
-        /* --- VARIABLES ADICIONALES --- */
 
-        const TempBase = namespace.addVariable({
-            componentOf: SubmodelOperational,
-            browseName: "T base",
-            dataType: "Double",
-            value: {
-                get: () => new Variant({ dataType: DataType.Double, value: Tb+S})
-            },
-        });
-        const TempExtr = namespace.addVariable({
-            componentOf: SubmodelOperational,
-            browseName: "T extrusor",
-            dataType: "Double",
-            value: {
-                get: () => new Variant({ dataType: DataType.Double, value: Te+S})
-            },
-        });
-        const Alarm = namespace.addObject({
-            browseName: "Alarmas",
-            componentOf: opc40502,
-        });
-        const Error = namespace.addVariable({
-            browseName: "Error",
-            componentOf: Alarm,
-            dataType: "String",
-            value: {
-                get: () => new Variant({ dataType: DataType.String, value: errImp+T})
-            }
-        });
-
-        /* --- MAPEAR VARIABLES --- */
-        /* --- mapeo unico ---*/
-
-        /* --- Identificacion general ---*/
-        IdentificationAAS.id.setValueFromSource({ dataType: "String", 
-            value: "https://www.univalle.edu.co/eime/aas/1/1/AAS-3DPrinter"
-        });
-        IdentificationAAS.idType.setValueFromSource({ dataType: "Int32", value:1});
+        /* --- BORRAR NODOS NO UTILIZADOS ---*/
+        addressSpace.deleteNode(addressSpace.rootFolder.objects.deviceSet)
+        addressSpace.deleteNode(addressSpace.rootFolder.objects.deviceTopology)
+        addressSpace.deleteNode(addressSpace.rootFolder.objects.machines)
+        addressSpace.deleteNode(addressSpace.rootFolder.objects.networkSet)
+        addressSpace.deleteNode(addressSpace.rootFolder.objects.test)
         
-        IdentificationAsset.id.setValueFromSource({ dataType: "String", 
-            value: "https://impresoras3dcolombia.co/IP3DPRUSA"
-        });
-        IdentificationAsset.idType.setValueFromSource({ dataType: "Int32", value:1});
 
-        AAS.asset.assetKind.setValueFromSource({ dataType: "Int32", value:1});   
-        AAS.asset.assetIdentificationModel.keys.setValueFromSource({ dataType: DataType.String,
-            value: "(Submodel)[IRI]https://impresoras3dcolombia.co/IP3DPRUSA"
-        });
-            
-        AASfile.value.setValueFromSource({ dataType: "String", value: "creality-ender-3-3d-printer-manual.pdf"})
-        AASfile.mimeType.setValueFromSource({ dataType: "String", value: "application/pdf"})
-        File.size.setValueFromSource({dataType: "UInt64", value: 828480})
-        AAS.shortName.setValueFromSource({ dataType: DataType.LocalizedText,
-            value: [{locale: "es",text: "Impresora 3D"},{locale: "en",text: "Printer 3D"}]
-        })
-
-        /* --- CREAR METODOS ---*/
-
-        const method = namespace.addMethod(SubmodelOperational,{
-            browseName: "Write Serial",
-            inputArguments:  [
-                {
-                    name:"Gcode, Mcode",
-                    description: { text: "Escribir codigo a enviar" },
-                    dataType: DataType.String
-                }
-            ],
-            outputArguments: [{
-                name:"Confirmacion",
-                description:{ text: "Confirmar envio" },
-                dataType: DataType.String ,
-            }]
-        });
-        method.bindMethod((inputArguments,context,callback) => {
-            const inCode =  inputArguments[0].value;
-            port.write(inCode);
-            const callMethodResult = {
-                statusCode: StatusCodes.Good,
-                outputArguments: [{
-                        dataType: DataType.String,
-                        value : "Codigo enviado"
-                }]
-            };
-            callback(null,callMethodResult);
-            console.log(inCode);
-        });
-        
         /* --- ESPERAR CONFIGURACION DEL SERVIDOR PARA COMENZAR A EXPONERSE ---*/
 
         await server.start();
@@ -586,7 +691,8 @@ setTimeout(()=>{
 /* --- SIMULACION DE CAMBIO DE TEMPERATURAS POR SEGUNDO --- */
 setInterval(() => {
     S = 60*Math.random()
-}, 5000);
+    T = T+String(Math.random())
+}, 10000);
 
 
 
