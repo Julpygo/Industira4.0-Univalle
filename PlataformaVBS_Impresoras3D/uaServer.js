@@ -4,14 +4,15 @@ const { OPCUAServer,DataType,nodesets,
     StatusCodes,Variant,standardUnits} = require("node-opcua");
 const chalk = require("chalk");
 const SerialPort = require('serialport');
+const { text } = require("express");
 // const raspi = require('raspi');
 // const I2C = require('raspi-i2c').I2C;
 
 
 /* --- VARIABLES GLOBALES --- */
 
-Tb = ''; Te = '';   
-P = ''; I = ''; D = ''; S = ''; T = ''    // PID hottend 
+Tb = null; Te = '';   
+P = ''; I = ''; D = '';   // PID hottend 
 // Parametros
 Df = ''; PasosE = ''; PasosX = ''; PasosY = ''; PasosZ = ''; 
 VmaxX = ''; VmaxY = ''; VmaxZ = ''; VmaxE = ''; AmaxE = ''; 
@@ -187,36 +188,6 @@ const userManager = {
         SM_Identification.modelingKind.setValueFromSource({dataType:"Int32",value: 1});
         
 
-        /* --- MODELACION DEL SUBMODELO DE DOCUMENTOS ---*/
-        const SMDocuments = AASSubmodelType.instantiate({
-            browseName: "SubmodelDocuments",
-            componentOf: AAS,
-        });
-        const SMDocumentsId = AASIdentifierType.instantiate({
-            browseName: "identification",
-            componentOf: SMDocuments
-        });
-        const OperationManual = AASSubmodelElementCollectionType.instantiate({
-            browseName: "OperationManual",
-            componentOf: SMDocuments,
-            optionals:["AllowDuplicates"]
-        });
-        const AASfile = AASFileType.instantiate({
-            browseName: "DigitalFile_PDF",
-            componentOf: OperationManual
-        });
-        const File = FileType.instantiate({
-            browseName: "File",
-            componentOf: AASfile
-        });
-        /* --- MAPEO ---*/
-        AASfile.value.setValueFromSource({ dataType: "String", value: "creality-ender-3-3d-printer-manual.pdf"});
-        AASfile.mimeType.setValueFromSource({ dataType: "String", value: "application/pdf"});
-        File.size.setValueFromSource({dataType: "UInt64", value: 828480});
-        SMDocumentsId.id.setValueFromSource({dataType:"String",value:" url segun normativas"});
-        SMDocumentsId.idType.setValueFromSource({dataType:"Int32",value: 1});
-
-
         /* --- MODELACION DEL SUBMODELO OPERATIONAL DATA ---*/
         addressSpace.installAlarmsAndConditionsService();
         const SMOperational = AASSubmodelType.instantiate({
@@ -259,7 +230,7 @@ const userManager = {
         /* --- CREAR VARIABLES --- */
         const TempBase = namespace.addAnalogDataItem({
             componentOf: CncAxisY,
-            browseName: "TemperaturaBaseCaliente",
+            browseName: "TempBase",
             definition: "Temperatura de la base caliente",
             valuePrecision: 0.01,
             engineeringUnitsRange: { low: 100, high: 200 },
@@ -267,7 +238,7 @@ const userManager = {
             engineeringUnits: standardUnits.degree_celsius,
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: Tb+S})
+                get: () => new Variant({ dataType: DataType.Double, value: Tb})
             },
         });
         const TempExtr = namespace.addAnalogDataItem({
@@ -280,7 +251,7 @@ const userManager = {
             engineeringUnits: standardUnits.degree_celsius,
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: Te+S})
+                get: () => new Variant({ dataType: DataType.Double, value: Te})
             },
         });
         const CncMessage = CncMessageType.instantiate({
@@ -294,7 +265,7 @@ const userManager = {
             eventSourceOf: CncChannel,
             dataType: "String",
             value: {
-                get: () => new Variant({ dataType: DataType.String, value: errImp+T})
+                get: () => new Variant({ dataType: DataType.String, value: errImp})
             }
         });
         CncChannel.addReference({referenceType: "Organizes", nodeId:CncAxisExtrusor});
@@ -303,6 +274,7 @@ const userManager = {
         CncChannel.addReference({referenceType: "Organizes", nodeId:CncAxisZ});
         CncChannel.addReference({referenceType: "Organizes", nodeId:CncSpindle});
         CncChannel.addReference({referenceType: "GeneratesEvent",nodeId:CncMessage});
+        
         
         /* --- CREAR METODOS ---*/
         const method = namespace.addMethod(SMOperational,{
@@ -322,7 +294,7 @@ const userManager = {
         });
         method.bindMethod((inputArguments,context,callback) => {
             const inCode =  inputArguments[0].value;
-            port.write(inCode);
+            port.write(`${inCode} \r\n` );
             const callMethodResult = {
                 statusCode: StatusCodes.Good,
                 outputArguments: [{
@@ -338,9 +310,14 @@ const userManager = {
         CncMessage.eventType.setValueFromSource({dataType: "NodeId",value: CncMessageType.nodeId});
         CncMessage.sourceName.setValueFromSource({dataType: "String",value: "Mensaje de error"});
         CncMessage.eventId.setValueFromSource({dataType: "String", value: "Interrupt errors"});
-        setInterval(()=>{
-            CncMessage.message.setValueFromSource({dataType: DataType.LocalizedText,value:{locale:"en",text: errImp+T}})
-        },5000);
+        setInterval( ()=>{
+            if(errImp != ''){
+                CncMessage.message.setValueFromSource( new Variant ({
+                    dataType: DataType.LocalizedText, 
+                    value: [{locale:"EN",text: errImp}]
+                }))
+            }
+        },100)
         SMOperationalId.id.setValueFromSource({dataType:"String",value:" url segun normativas"});
         SMOperationalId.idType.setValueFromSource({dataType:"Int32",value: 1});
         SMOperational.modelingKind.setValueFromSource({dataType:"Int32",value: 1});
@@ -396,111 +373,6 @@ const userManager = {
         });
         DfilamentoDicc.addReference({referenceType:"HasAddIn",nodeId:DataSpecification})
         
-        const steps = namespace.addObject({
-            browseName: "StepsUnit",
-            description: "Pasos por unidad",
-            componentOf: SMTechnical
-        });
-        const stepsX = namespace.addVariable({
-            browseName: "stepsX",
-            description: "Pasos por unidad eje x",
-            dataType: "Double",
-            value: {get: () => new Variant({ dataType: DataType.Double, value: PasosX})},
-            componentOf: steps
-        });
-        const stepsY = namespace.addVariable({
-            browseName: "stepsY",
-            description: "Pasos por unidad eje y",
-            dataType: "Double",
-            value: {get: () => new Variant({ dataType: DataType.Double, value: PasosY})},
-            componentOf: steps
-        });
-        const stepsZ = namespace.addVariable({
-            browseName: "stepsZ",
-            description: "Pasos por unidad eje z",
-            dataType: "Double",
-            value: {get: () => new Variant({ dataType: DataType.Double, value: PasosZ})},
-            componentOf: steps
-        });
-        const stepsE = namespace.addVariable({
-            browseName: "stepsE",
-            description: "Pasos por unidad eje E",
-            dataType: "Double",
-            value: {get: () => new Variant({ dataType: DataType.Double, value: PasosE})},
-            componentOf: steps
-        });
-        const MaxFeedrates = namespace.addObject({
-            browseName: "MaxFeedrates",
-            description: "Velocidad máxima de avance",
-            componentOf: SMTechnical
-        });
-        const MaxFeedratesX = namespace.addVariable({
-            browseName: "MaxFeedratesX",
-            description: "Velocidad máxima de avance eje X",
-            dataType: "Double",
-            value: {get: () => new Variant({ dataType: DataType.Double, value: VmaxX})},
-            componentOf: MaxFeedrates
-        });
-        const MaxFeedratesY = namespace.addVariable({
-            browseName: "MaxFeedratesY",
-            description: "Velocidad máxima de avance eje Y",
-            dataType: "Double",
-            value: {get: () => new Variant({ dataType: DataType.Double, value: VmaxY})},
-            componentOf: MaxFeedrates
-        });
-        const MaxFeedratesZ = namespace.addVariable({
-            browseName: "MaxFeedratesZ",
-            description: "Velocidad máxima de avance eje Z",
-            dataType: "Double",
-            value: {get: () => new Variant({ dataType: DataType.Double, value: VmaxZ})},
-            componentOf: MaxFeedrates
-        });
-        const MaxFeedratesE = namespace.addVariable({
-            browseName: "MaxFeedratesE",
-            description: "Velocidad máxima de avance eje E",
-            dataType: "Double",
-            value: {get: () => new Variant({ dataType: DataType.Double, value: VmaxE})},
-            componentOf: MaxFeedrates
-        });
-        const MaxAceleracion = namespace.addObject({
-            browseName: "MaxAceleracion",
-            description: "Aceleración máxima",
-            componentOf: SMTechnical
-        });
-        const MaxAceleracionX = namespace.addVariable({
-            browseName: "MaxAceleracionX",
-            description: "Aceleración máxima eje X",
-            dataType: "Double",
-            value: {get: () => new Variant({ dataType: DataType.Double, value: AmaxX})},
-            componentOf: MaxAceleracion
-        });
-        const MaxAceleracionY = namespace.addVariable({
-            browseName: "MaxAceleracionY",
-            description: "Aceleración máxima eje Y",
-            dataType: "Double",
-            value: {get: () => new Variant({ dataType: DataType.Double, value: AmaxY})},
-            componentOf: MaxAceleracion
-        });
-        const MaxAceleracionZ = namespace.addVariable({
-            browseName: "MaxAceleracionZ",
-            description: "Aceleración máxima eje Z",
-            dataType: "Double",
-            value: {get: () => new Variant({ dataType: DataType.Double, value: AmaxZ})},
-            componentOf: MaxAceleracion
-        });
-        const MaxAceleracionE = namespace.addVariable({
-            browseName: "MaxAceleracionE",
-            description: "Aceleración máxima eje E",
-            dataType: "Double",
-            value: {get: () => new Variant({ dataType: DataType.Double, value: AmaxE})},
-            componentOf: MaxAceleracion
-        });
-        const DefaultPLA = namespace.addVariable({
-            browseName: "DefaultPLA",
-            description: "Parametros por defecto para impresion con PLA",
-            dataType: "Double",
-            componentOf: SMTechnical
-        });
         const PID_Hottend = namespace.addObject({
             browseName: "PID_Hottend",
             description: "Parametros PID por defecto para hottend",
@@ -512,7 +384,7 @@ const userManager = {
             componentOf: PID_Hottend,
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: P+Pm})
+                get: () => new Variant({ dataType: DataType.Double, value: P})
             }
         })
         const I_Hottend = namespace.addVariable({
@@ -521,7 +393,7 @@ const userManager = {
             componentOf: PID_Hottend,
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: I+Pm})
+                get: () => new Variant({ dataType: DataType.Double, value: I})
             }
         })
         const D_Hottend = namespace.addVariable({
@@ -530,7 +402,7 @@ const userManager = {
             componentOf: PID_Hottend,
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: D+Pm})
+                get: () => new Variant({ dataType: DataType.Double, value: D})
             }
         })
         /* --- MAPEO ---*/
@@ -650,18 +522,17 @@ parser.on('data', (line)=>{
             D = line.slice(line.search('D')+1,);
             // console.log('P',P,'I',I,'D',D);
         }
-        else if(line.search('Error') != -1){     // Mensaje de error impresora
-            errImp = line;
-            // console.log('error impresora',errImp,);
-        }
     }
-    else{
+    else if(line.search('Error') != -1){     // Mensaje de error impresora
+        errImp = line.slice(line.search(':')+1,);
+        console.log('error impresora',errImp);
+    }
+    else if(line.search("T:" != -1)){
         Te = Number(line.slice(line.search('T')+2,line.search('/')-1));
         Tb = Number(line.slice(line.search('B')+2,line.search('@')-7));
-        // console.log("Tb =",Tb);
-        // console.log("Te =",Te);
-    }
- 
+        console.log("Tb =",Tb);
+        console.log("Te =",Te);
+}
     console.log(line);
 })
 
@@ -675,25 +546,9 @@ port.on('err', function(err){
 });
 
 setTimeout(()=>{
-    // port.write("G28\r\n");   // Mandar a home (comandos sin \r\n no funcionan )
-    T = 'Prueba';
-    Pm = 30*Math.random();
-    // port.write("M155 S4\r\n");  // Pedir temperaturas cada 4 segundos (Evita errores en la impresion)
+    port.write("M155 S5\r\n");  // Pedir temperaturas cada 4 segundos (Evita errores en la impresion)
     // port.write("M115\r\n")      // Informacion del Firmware
-},8000)
-
-
-// setInterval(()=>{
-//     port.write("M114 \r\n");   // Pedir posiciones 
-//     // port.write("M105 \r\n");  // Pedir temperaturas
-// },1000)
-
-/* --- SIMULACION DE CAMBIO DE TEMPERATURAS POR SEGUNDO --- */
-setInterval(() => {
-    S = 60*Math.random()
-    T = T+String(Math.random())
-}, 10000);
-
+},5000)
 
 
 /* --- Comunicacion I2C --- */
@@ -701,4 +556,4 @@ setInterval(() => {
 // raspi.init(() => {
 //   const i2c = new I2C();
 //   console.log(i2c.readByteSync(0x18)); // Read one byte from the device at address 18
-// });              
+// });

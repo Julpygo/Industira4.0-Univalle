@@ -18,12 +18,12 @@ gcodes = 'inicial';
 /* --- CONSTANTES DEL SERVIDOR UA ---*/
 
 const endpointUrl = "opc.tcp://" + require("os").hostname() + ":4334/UA/ImpresoraServer";
-const nodeIdToMonitorTb = "ns=1;i=1356";   //Tb
-const nodeIdToMonitorTe = "ns=1;i=1362";   //Te
-const nodeIdToMonitorP = "ns=1;i=1215";   //P
-const nodeIdToMonitorI = "ns=1;i=1216";   //I
-const nodeIdToMonitorD = "ns=1;i=1217";   //D
-const nodeIdToMonitorErr = "ns=1;i=1219";   // Error
+const nodeIdToMonitorTb = "ns=1;i=1322";   //Tb
+const nodeIdToMonitorTe = "ns=1;i=1328";   //Te
+const nodeIdToMonitorP = "ns=1;i=1368";   //P
+const nodeIdToMonitorI = "ns=1;i=1369";   //I
+const nodeIdToMonitorD = "ns=1;i=1370";   //D
+const nodeIdToMonitorErr = "ns=1;i=1341";   // Error
 
 /* --- CONSTASTES MONGO DB ---*/
 
@@ -88,6 +88,7 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     const monitoredItemI = await subscription.monitor(itemToMonitorI, parameters, TimestampsToReturn.Both);
     const monitoredItemD = await subscription.monitor(itemToMonitorD, parameters, TimestampsToReturn.Both);
     const monitoredItemErr = await subscription.monitor(itemToMonitorErr, parameters, TimestampsToReturn.Both);
+    Asset = "PrusaIP3D"
     
     /* --- CONEXION A LA BASE DE DATOS --- */
 
@@ -102,7 +103,8 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
       collection.insertOne({
         Variable: "Tb",
         valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp
+        tiempo: dataValue.serverTimestamp,
+        AssetId: Asset
       });
 
       /* --- ACTUALIZACION EN APP WEB --- */
@@ -206,8 +208,8 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
 
     Gcode = () => { 
       session.call([{
-        objectId: "ns=1;i=1051",    // nodeId del componentOf
-        methodId: "ns=1;i=1218",    // nodeIde del metodo
+        objectId: "ns=1;i=1031",    // nodeId del componentOf
+        methodId: "ns=1;i=1344",    // nodeIde del metodo
         inputArguments: [
           new Variant({dataType: DataType.String, value: gcodes})
         ]
