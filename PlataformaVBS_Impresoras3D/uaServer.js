@@ -16,7 +16,7 @@ P = ''; I = ''; D = '';   // PID hottend
 // Parametros
 Df = ''; PasosE = ''; PasosX = ''; PasosY = ''; PasosZ = ''; 
 VmaxX = ''; VmaxY = ''; VmaxZ = ''; VmaxE = ''; AmaxE = ''; 
-AmaxX = ''; AmaxY = ''; AmaxZ = ''; errImp = ''; Pm = '';
+AmaxX = ''; AmaxY = ''; AmaxZ = ''; errImp = ''; errores = [], errImpPasado = 'inicial', Pm = '';
 const I4AAS = "Opc.Ua.I4AAS.NodeSet2.xml";
 
 
@@ -311,13 +311,15 @@ const userManager = {
         CncMessage.sourceName.setValueFromSource({dataType: "String",value: "Mensaje de error"});
         CncMessage.eventId.setValueFromSource({dataType: "String", value: "Interrupt errors"});
         setInterval( ()=>{
-            if(errImp != ''){
+            if(errImp != '' && errImpPasado != errImp){
+                errores.push({locale:"EN",text: errImp})
+                errImpPasado = errImp;
                 CncMessage.message.setValueFromSource( new Variant ({
                     dataType: DataType.LocalizedText, 
-                    value: [{locale:"EN",text: errImp}]
+                    value: errores,
                 }))
             }
-        },100)
+        },1000)
         SMOperationalId.id.setValueFromSource({dataType:"String",value:" url segun normativas"});
         SMOperationalId.idType.setValueFromSource({dataType:"Int32",value: 1});
         SMOperational.modelingKind.setValueFromSource({dataType:"Int32",value: 1});
