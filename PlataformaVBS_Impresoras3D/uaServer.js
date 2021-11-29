@@ -532,10 +532,10 @@ parser.on('data', (line)=>{
     else if(line.search("T:" != -1)){
         Te = Number(line.slice(line.search('T')+2,line.search('/')-1));
         Tb = Number(line.slice(line.search('B')+2,line.search('@')-7));
-        console.log("Tb =",Tb);
-        console.log("Te =",Te);
+        // console.log("Tb =",Tb);
+        // console.log("Te =",Te);
 }
-    console.log(line);
+    // console.log(line);
 })
 
 

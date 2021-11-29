@@ -13,11 +13,13 @@ transporter = nodemailer.createTransport({
 
 router.post('/autorizacion', (req, res) => {
     const {respuesta, tiempo, ti_revision, tf_revision} = req.body;
+    ti =  new Date(ti_revision);
+    tf = new Date(tf_revision);
 
     if(respuesta === 'SI'){
       contentHTML = `
-          <h1>EL cliente de la impresora X ha solicitado un servicio tecnico debido a la ocurrecia de una falla 
-          el ${tiempo}. El horario disponible para revision de la maquina es (${ti_revision}-${tf_revision})</h1>
+          <h1>EL cliente de la impresora Prusa1 ha solicitado un servicio tecnico debido a la ocurrecia de una falla 
+          el ${tiempo}. El horario disponible para revision de la maquina es ${ti} hasta ${tf}</h1>
           <h2>para aceptar el contrato da clic en el siguiente enlace: http://localhost:3000/contrato.html <h2>
           <h2>Para accedar a la base de datos en mongo db utilice la siguiente clave de api: hbpdvmtc <h2>
           <h2>Ingrese a la plataforma para gestionar la falla con el siguiente link: http://localhost:3000/</h2>

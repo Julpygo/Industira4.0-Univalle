@@ -25,68 +25,44 @@ SE UTILIZA LA FUNCION ONLOAD PARA CREAR O INICIALIZAR
 LAS GRAFICAS CUANDO SE CARGA LA PAGINA
  ***/
 window.onload = function(){
-     // Parametrizar la grafica
-     Pline = new RGraph.Line({
-          id: 'cvs_line',
-          data:data_line,
-          options: {
-               xaxisLabels: ['tiempo'],
-               marginLeft: 75,
-               marginRight: 55,
-               title: 'Tb vs t',
-               titleBold: true,
-               titleSize: 16,
-               filled: true,
-               filledColors: ['#C2D1F0'],
-               colors: ['#3366CB'],
-               shadow: false,
-               tickmarksStyle: null,
-               xaxisTickmarksCount: 10,
-               backgroundGridVlines: false,
-               backgroundGridBorder: false,
-               xaxis: true,
-               textSize: 16
-          }
-     }).draw();
+    config = {
+        xaxisLabels: ['','5','10','15','20','25','30','35','40','45','50','55','60','65','70','75','80','85','90','95','100'],
+        xaxisTickmarksCount: 21,
+        xaxis: true,
+        yaxisScaleUnitsPost: ' °c',
+        title: 'Tb vs t',
+        titleBold: true,
+        titleSize: 16,
+        filled: false,
+        colors: ['#3366CB'],
+        marginLeft: 75,
+        marginRight: 55,
+        shadow: false,
+        tickmarksStyle: 'circle',
+        tickmarksSize: 2,
+        backgroundGridVlines: true,
+        textSize: 16,
+        linewidth: 2,
+    };
+    config2 = Object.assign({}, config)
+    config2.title = 'Te vs t'
 
-     config = {
-         xaxisLabels: ['','5','10','15','20','25','30','35','40','45','50','55','60','65','70','75','80','85','90','95','100'],
-         xaxisTickmarksCount: 21,
-         xaxis: true,
-         yaxisScaleUnitsPost: ' °c',
-         title: 'Te vs t',
-         titleBold: true,
-         titleSize: 16,
-         filled: false,
-         colors: ['#3366CB'],
-         marginLeft: 75,
-         marginRight: 55,
-         shadow: false,
-         tickmarksStyle: 'circle',
-         tickmarksSize: 2,
-         backgroundGridVlines: true,
-         textSize: 16,
-         linewidth: 2,
-         backgroundHbars: [
-            [0,10,'yellow'],
-            [10,40,'#0f0'],
-            [40,50,'red']
-        ],
-     };
-
-     Pline2 = new RGraph.Line({
+    Pline = new RGraph.Line({
+        id: 'cvs_line',
+        data:data_line,
+        options: config
+    }).draw();
+    Pline2 = new RGraph.Line({
         id: 'cvs_line2',
         data:data_line2,
-        options: config
+        options: config2
     }).draw();
 
     table = new Tabulator("#alarm-table", {
         height:200,
         layout:"fitColumns",
         columns:[
-        {title:"Variable", field:"var"},
         {title:"Tiempo", field:"t"},
-        {title:"Valor", field:"v", sorter:"number"},
         {title:"Alarma", field:"a"},
         ],
     });
@@ -128,18 +104,16 @@ socket.on("Tb", function(dataValue){
 
 socket.on("Te", function(dataValue){
     drawLine2(dataValue.value);
-
-    if (dataValue.value > 49 && flag == true){
-        /*** agregar la alarma a la tabla y cambiar la bandera ***/
-        flag = false;
-        data_table = table.getData();
-        data_table.push({var:"T del extrusor" , t:dataValue.timestamp, v:dataValue.value, a:"Valor muy alto"});
-        table.setData(data_table);
-    }
-    else if (flag == false && dataValue.value < 49){
-        flag = true;
-    };
+    console.log("temperatura");
 });
+
+socket.on("Error", function(dataValue){
+    flag = false;
+    data_table = table.getData();
+    data_table.push({t:dataValue.timestamp, a:dataValue.value});
+    table.setData(data_table);
+    console.log("error");
+})
 
 function obtener_Gcode(){
     let Gcode = document.getElementById("Gcodes")

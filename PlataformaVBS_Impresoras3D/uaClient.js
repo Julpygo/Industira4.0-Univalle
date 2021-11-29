@@ -7,7 +7,6 @@ const SocketIO = require('socket.io');
 const express = require("express");
 const path = require('path');
 var nodemailer = require('nodemailer');
-var fs = require('fs');
 var EventEmitter = require('events')
 
 /* --- CREACION DE VARIABLES INICIALES --- */
@@ -23,7 +22,7 @@ const nodeIdToMonitorTe = "ns=1;i=1328";   //Te
 const nodeIdToMonitorP = "ns=1;i=1368";   //P
 const nodeIdToMonitorI = "ns=1;i=1369";   //I
 const nodeIdToMonitorD = "ns=1;i=1370";   //D
-const nodeIdToMonitorErr = "ns=1;i=1341";   // Error
+const nodeIdToMonitorErr = "ns=1;i=1343";   // Error
 
 /* --- CONSTASTES MONGO DB ---*/
 
@@ -88,7 +87,6 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     const monitoredItemI = await subscription.monitor(itemToMonitorI, parameters, TimestampsToReturn.Both);
     const monitoredItemD = await subscription.monitor(itemToMonitorD, parameters, TimestampsToReturn.Both);
     const monitoredItemErr = await subscription.monitor(itemToMonitorErr, parameters, TimestampsToReturn.Both);
-    Asset = "PrusaIP3D"
     
     /* --- CONEXION A LA BASE DE DATOS --- */
 
@@ -96,15 +94,14 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     const collection = clientmongo.db("VarImpresora3D").collection("Historial de datos"); 
 
     /* --- ACTUALIZACION DE VARIABLES EN MONGO Y EN APP WEB --- */
-    
+
     monitoredItemTb.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-
+      
       collection.insertOne({
         Variable: "Tb",
         valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp,
-        AssetId: Asset
+        tiempo: dataValue.serverTimestamp
       });
 
       /* --- ACTUALIZACION EN APP WEB --- */
@@ -197,6 +194,10 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
         Variable: "Error",
         valor: dataValue.value.value, 
         tiempo: dataValue.serverTimestamp
+      });
+      io.sockets.emit("Error", {
+        timestamp:dataValue.serverTimestamp,
+        value:dataValue.value.value
       });
       event.emit("Error", {
         tiempo:dataValue.serverTimestamp,
@@ -312,14 +313,11 @@ event.on("Error", (data) => {
     from: 'gomez.julian@correounivalle.edu.co',
     to: 'julian-gomes@outlook.com',
     subject: 'Alarma prueba',
-    text: `
-    Se ha detectado una anomalia en su Impresora 3D.
-    Si deseas autorizar una revision de esta para garantizar su
-    optimo funcionamiento u obtener mas información. 
-    
-    HAZ CLIC EN EL SIGUIENTE ENLACE  http://localhost:3000/autorizacion.html
-    EL valor solicitado es:
-     Tiempo: ${data.tiempo}`
+    html: `
+    <h2>Se ha detectado una anomalia en su Impresora 3D. Si deseas autorizar una revision para garantizar su optimo funcionamiento u obtener mas información:</h2> 
+    <h1><a href="http://localhost:3000/autorizacion.html">HAZ CLIC AQUI </a></h1>
+    <h2>Por favor copie y pegue el siguiente valor en el formulario:<br>
+    Fecha de la falla: ${data.tiempo}</h2>`
   };
   transporter.sendMail(mailOptions, function(error, info){
     if (error) {
