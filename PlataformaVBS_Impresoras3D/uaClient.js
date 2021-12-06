@@ -22,7 +22,7 @@ const nodeIdToMonitorTe = "ns=1;i=1328";   //Te
 const nodeIdToMonitorP = "ns=1;i=1368";   //P
 const nodeIdToMonitorI = "ns=1;i=1369";   //I
 const nodeIdToMonitorD = "ns=1;i=1370";   //D
-const nodeIdToMonitorErr = "ns=1;i=1343";   // Error
+const nodeIdToMonitorErr = "ns=1;i=1341";   // Error
 
 /* --- CONSTASTES MONGO DB ---*/
 

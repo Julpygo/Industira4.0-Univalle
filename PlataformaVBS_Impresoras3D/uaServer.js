@@ -4,7 +4,6 @@ const { OPCUAServer,DataType,nodesets,
     StatusCodes,Variant,standardUnits} = require("node-opcua");
 const chalk = require("chalk");
 const SerialPort = require('serialport');
-const { text } = require("express");
 // const raspi = require('raspi');
 // const I2C = require('raspi-i2c').I2C;
 
@@ -82,8 +81,6 @@ const userManager = {
         const AASConceptDictionaryType = addressSpace.findObjectType("AASConceptDictionaryType",nsAAS);
         const IAASIdentifiableType = addressSpace.findObjectType("IAASIdentifiableType",nsAAS);
         const AASIdentifierType = addressSpace.findObjectType("AASIdentifierType",nsAAS);
-        const AASFileType = addressSpace.findObjectType("AASFileType",nsAAS);
-        const AASSubmodelElementCollectionType = addressSpace.findObjectType("AASSubmodelElementCollectionType",nsAAS);
         const AASPropertyType = addressSpace.findObjectType("AASPropertyType",nsAAS);
         const AASIrdiConceptDescriptionType = addressSpace.findObjectType('AASIrdiConceptDescriptionType',nsAAS);
         const AASDataSpecificationIEC61360Type = addressSpace.findObjectType('AASDataSpecificationIEC61360Type',nsAAS);
@@ -463,78 +460,26 @@ const parser = new SerialPort.parsers.Readline()
 port.pipe(parser)
 
 parser.on('data', (line)=>{
-    if(line.search('echo') != -1){
-        if(line.search('G21 ') != -1){      // Unidades en [mm]
-            unit = 'mm'
-            // console.log('unidades en',unit);
-        }
-        else if(line.search('G20 ') != -1){      // Unidades en [in]
-            unit = 'in'
-            // console.log('unidades en',unit);
-        }
-        else if(line.search('M149') != -1){      // unidades de las temperaturas
-            if(line.search('C') != -1){
-                unitT = 'C'
-                // console.log('Temperaturas en',unitT);
-            }
-            else if(line.search('F') != -1){
-                unitT = 'F'
-                // console.log('Temperaturas en',unitT);
-            }
-            else{
-                unitT = 'K'
-                // console.log('Temperaturas en',unitT);
-            }
-            
-        }
-        else if(line.search('M200') != -1){      // Diametro del filamento [unit] 
-            Df = line.slice(line.search('D')+1,)
-            // console.log('Df',Df);
-        }
-        else if(line.search('M92') != -1){      // Pasos por unidad [pasos/unit]
-            PasosX = line.slice(line.search('X')+1,line.search('Y')-1);
-            PasosY = line.slice(line.search('Y')+1,line.search('Z')-1);
-            PasosZ = line.slice(line.search('Z')+1,line.search('E')-1);
-            PasosE = line.slice(line.search('E')+1,);
-            // console.log('PasosmmX',PasosmmX,'PasosmmY',PasosmmY,'PasosmmZ',PasosmmZ,'PasosmmE',PasosmmE);
-        }   
-        else if(line.search('M203') != -1){     // Velocidad maxima de avance [unit/s]
-            VmaxX = line.slice(line.search('X')+1,line.search('Y')-1);
-            VmaxY = line.slice(line.search('Y')+1,line.search('Z')-1);
-            VmaxZ = line.slice(line.search('Z')+1,line.search('E')-1);
-            VmaxE = line.slice(line.search('E')+1,);
-            // console.log('VmaxX',VmaxX,'VmaxY',VmaxY,'VmaxZ',VmaxZ,'VmaxE',VmaxE);
-        }
-        else if(line.search('M201') != -1){     // Aceleracion maxima [unit/s2]
-            AmaxX = line.slice(line.search('X')+1,line.search('Y')-1);
-            AmaxY = line.slice(line.search('Y')+1,line.search('Z')-1);
-            AmaxZ = line.slice(line.search('Z')+1,line.search('E')-1);
-            AmaxE = line.slice(line.search('E')+1,);
-            // console.log('AmaxX',AmaxX,'AmaxY',AmaxY,'AmaxZ',AmaxZ,'AmaxE',AmaxE);
-        }
-        else if(line.search('M204') != -1){     // Aceleraciones de impresion, retraccion y viaje [unit/s2]
-            APrint = line.slice(line.search('P')+1,line.search('R')-1);
-            Aretract = line.slice(line.search('R')+1,line.search('T')-1);
-            Atravel = line.slice(line.search('T')+1,);
-            // console.log('APrint',APrint,'Aretract',Aretract,'Atravel',Atravel);
-        }
-        else if(line.search('M301') != -1){     // Parametros PID
-            P = line.slice(line.search('P')+1,line.search('I')-1);
-            I = line.slice(line.search('I')+1,line.search('D')-1);
-            D = line.slice(line.search('D')+1,);
-            // console.log('P',P,'I',I,'D',D);
-        }
+    if(line.search('M200') != -1){      // Diametro del filamento [unit] 
+        Df = line.slice(line.search('D')+1,)
+        // console.log('Df',Df);
     }
-    else if(line.search('Error') != -1){     // Mensaje de error impresora
+    if(line.search('M301') != -1){     // Parametros PID
+        P = line.slice(line.search('P')+1,line.search('I')-1);
+        I = line.slice(line.search('I')+1,line.search('D')-1);
+        D = line.slice(line.search('D')+1,);
+        // console.log('P',P,'I',I,'D',D);
+    }
+    if(line.search('Error') != -1){     // Mensaje de error impresora
         errImp = line.slice(line.search(':')+1,);
         console.log('error impresora',errImp);
     }
-    else if(line.search("T:" != -1)){
+    if(line.search("T:") != -1){
         Te = Number(line.slice(line.search('T')+2,line.search('/')-1));
         Tb = Number(line.slice(line.search('B')+2,line.search('@')-7));
         // console.log("Tb =",Tb);
         // console.log("Te =",Te);
-}
+    }
     // console.log(line);
 })
 
@@ -548,9 +493,9 @@ port.on('err', function(err){
 });
 
 setTimeout(()=>{
-    port.write("M155 S5\r\n");  // Pedir temperaturas cada 4 segundos (Evita errores en la impresion)
+    port.write("M155 S4\r\n");  // Pedir temperaturas cada 4 segundos (Evita errores en la impresion)
     // port.write("M115\r\n")      // Informacion del Firmware
-},5000)
+},10000)
 
 
 /* --- Comunicacion I2C --- */

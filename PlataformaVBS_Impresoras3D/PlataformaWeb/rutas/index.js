@@ -20,9 +20,9 @@ router.post('/autorizacion', (req, res) => {
       contentHTML = `
           <h1>EL cliente de la impresora Prusa1 ha solicitado un servicio tecnico debido a la ocurrecia de una falla 
           el ${tiempo}. El horario disponible para revision de la maquina es ${ti} hasta ${tf}</h1>
-          <h2>para aceptar el contrato da clic en el siguiente enlace: http://localhost:3000/contrato.html <h2>
-          <h2>Para accedar a la base de datos en mongo db utilice la siguiente clave de api: hbpdvmtc <h2>
-          <h2>Ingrese a la plataforma para gestionar la falla con el siguiente link: http://localhost:3000/</h2>
+          <h2>para aceptar el contrato: <a href="http://localhost:3000/contrato.html">HAZ CLIC AQUI</a><h2>
+          <h2>Para accedar a la base de datos en mongo db: <a href="https://charts.mongodb.com/charts-project-platform-vbs-qppvf/public/dashboards/fda74be7-3fcf-4f99-b819-edc3a74265c0"> CLIC AQUI </a> <h2>
+          <h2>Ingrese a la plataforma para gestionar la falla <a href="http://localhost:3000/">CLIC AQUI</a></h2>
       `;
       res.send('recibido');
       
@@ -55,7 +55,7 @@ router.post('/contrato', (req, res) =>{
     setTimeout(()=>{ 
       contentHTML2 = `
         <h2>Despues de realizar el diagnostico 
-        por favor realice la siguiente encuesta: http://localhost:3000/encuesta.html <h2>
+        por favor realice la siguiente encuesta: <a href="http://localhost:3000/encuesta.html">CLIC AQUI</a><h2>
     `;
       var mailOptions2 = {
           from: 'gomez.julian@correounivalle.edu.co',
@@ -81,7 +81,7 @@ router.post('/contrato', (req, res) =>{
   }
 });
 
-router.post('/autorizacion', (req, res) => {
+router.post('/encuesta', (req, res) => {
   res.send("recibido")
 });
 
