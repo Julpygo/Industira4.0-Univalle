@@ -10,7 +10,7 @@ const SerialPort = require('serialport');
 
 /* --- VARIABLES GLOBALES --- */
 
-Tb = null; Te = '';   
+Tb = ''; Te = '';   
 P = ''; I = ''; D = '';   // PID hottend 
 // Parametros
 Df = ''; PasosE = ''; PasosX = ''; PasosY = ''; PasosZ = ''; 
@@ -480,7 +480,7 @@ parser.on('data', (line)=>{
         // console.log("Tb =",Tb);
         // console.log("Te =",Te);
     }
-    // console.log(line);
+    console.log(line);
 })
 
 
@@ -493,7 +493,7 @@ port.on('err', function(err){
 });
 
 setTimeout(()=>{
-    port.write("M155 S4\r\n");  // Pedir temperaturas cada 4 segundos (Evita errores en la impresion)
+    port.write("M155 S2\r\n");  // Pedir temperaturas cada 4 segundos (Evita errores en la impresion)
     // port.write("M115\r\n")      // Informacion del Firmware
 },10000)
 

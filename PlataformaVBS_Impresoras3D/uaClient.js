@@ -1,6 +1,6 @@
 /*--- IMPORTACION DE MODULOS --- */
 
-const { OPCUAClient, AttributeIds, TimestampsToReturn, Variant, DataType} = require("node-opcua");
+const { OPCUAClient, AttributeIds, TimestampsToReturn, Variant, DataType, MonitoringMode} = require("node-opcua");
 const MongoClient = require('mongodb').MongoClient;
 const {cyan, bgRed, yellow} = require("chalk");
 const SocketIO = require('socket.io');
@@ -76,12 +76,12 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     const parameters = {
       samplingInterval: 50,   //tiempo de muestreo 
       discardOldest: true,    //descartar datos anteriores 
-      queueSize: 100          //tamaño de la cola de datos 
+      queueSize: 1,          //tamaño de la cola de datos 
     };
 
     /* --- INICIAR MONITOREO POR SUBSCRIBCION --- */
 
-    const monitoredItemTb = await subscription.monitor(itemToMonitorTb, parameters, TimestampsToReturn.Both);
+    const monitoredItemTb = await subscription.monitor(itemToMonitorTb, parameters,TimestampsToReturn.Both);
     const monitoredItemTe = await subscription.monitor(itemToMonitorTe, parameters, TimestampsToReturn.Both);
     const monitoredItemP = await subscription.monitor(itemToMonitorP, parameters, TimestampsToReturn.Both);
     const monitoredItemI = await subscription.monitor(itemToMonitorI, parameters, TimestampsToReturn.Both);
@@ -94,10 +94,9 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     const collection = clientmongo.db("VarImpresora3D").collection("Historial de datos"); 
 
     /* --- ACTUALIZACION DE VARIABLES EN MONGO Y EN APP WEB --- */
-
     monitoredItemTb.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-      
+      console.log(dataValue.value.value);
       collection.insertOne({
         Variable: "Tb",
         valor: dataValue.value.value, 
@@ -105,7 +104,7 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
       });
 
       /* --- ACTUALIZACION EN APP WEB --- */
-
+      
       io.sockets.emit("Tb", {
         value: dataValue.value.value,
         timestamp: dataValue.serverTimestamp,
