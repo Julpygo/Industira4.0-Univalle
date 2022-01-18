@@ -20,15 +20,19 @@
   },
   "homepage": "https://github.com/Julpygo/Industira4.0-Univalle#readme",
   "dependencies": {
+    "ads1115": "^1.2.0",
     "chalk": "^4.1.1",
     "events": "^3.3.0",
     "express": "^4.17.1",
+    "i2c-bus": "^5.2.2",
     "mongodb": "^3.6.9",
     "node-opcua": "^2.43.0",
     "nodemailer": "^6.6.1",
     "nodemon": "^2.0.7",
     "path": "^0.12.7",
-    "serialport": "^9.0.8",
+    "raspi": "^6.0.1",
+    "raspi-i2c": "^6.2.4",
+    "serialport": "^9.2.8",
     "socket.io": "^4.1.2"
   }
 }
