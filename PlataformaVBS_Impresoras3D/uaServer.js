@@ -4,8 +4,39 @@ const { OPCUAServer,DataType,nodesets,
     StatusCodes,Variant,standardUnits} = require("node-opcua");
 const chalk = require("chalk");
 const SerialPort = require('serialport');
+
+// /* --- Comunicacion I2C --- */
+
 // const raspi = require('raspi');
 // const I2C = require('raspi-i2c').I2C;
+
+// raspi.init(() => {
+//     const i2c = new I2C();
+//     setInterval(()=>{
+//         console.log(i2c.readWordSync(0x48)); // Read one byte from the device at address 18
+//     },2000)
+//   });
+
+// const ADS1115 = require('ads1115')
+// const i2c = require('i2c-bus')
+
+// const B = 3950;
+// const A = 0.0001763;
+// const multiplier = 0.1875; // +-6.144 V ->0.1875 mv
+// const Ic = 34; // 34 mA
+
+// i2c.openPromisified(1).then(async (bus) => {
+//   const ads1115 = await ADS1115(bus)
+//   //ads1115.gain = 1
+
+//   for (let i = 0; i < 1000; i++) {
+//     let rawValue = await ads1115.measure('3+GND')
+//     let v0 = multiplier*rawValue
+//     let temperatura = (B/Math.log(v0/(Ic*A)))-273.15
+
+//     console.log("rawValue",rawValue,"Temperatura",temperatura,"°C")
+//   }
+// })
 
 
 /* --- VARIABLES GLOBALES --- */
@@ -480,7 +511,7 @@ parser.on('data', (line)=>{
         // console.log("Tb =",Tb);
         // console.log("Te =",Te);
     }
-    console.log(line);
+    // console.log(line);
 })
 
 
@@ -496,11 +527,3 @@ setTimeout(()=>{
     port.write("M155 S2\r\n");  // Pedir temperaturas cada 4 segundos (Evita errores en la impresion)
     // port.write("M115\r\n")      // Informacion del Firmware
 },10000)
-
-
-/* --- Comunicacion I2C --- */
-
-// raspi.init(() => {
-//   const i2c = new I2C();
-//   console.log(i2c.readByteSync(0x18)); // Read one byte from the device at address 18
-// });

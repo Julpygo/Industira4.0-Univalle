@@ -21,7 +21,5 @@ setInterval(()=>{
     var Te = Math.exp(contador/30);
     var Tb = Math.exp(contador/40);
     port.write(`T:${Te} /0.00 B:${Tb} /60.00 @:0 B@:127\r\n`)
-    // console.log(`T:${Te} /0.00 B:${Tb} /60.00 @:0 B@:127\r\n`);
+    console.log(`T:${Te} /0.00 B:${Tb} /60.00 @:0 B@:127\r\n`);
 },2000)
-
-
