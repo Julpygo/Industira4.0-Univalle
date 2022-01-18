@@ -3,7 +3,7 @@
 const { OPCUAServer,DataType,nodesets,
     StatusCodes,Variant,standardUnits} = require("node-opcua");
 const chalk = require("chalk");
-const SerialPort = require('serialport');
+// const SerialPort = require('serialport');
 // const raspi = require('raspi');
 // const I2C = require('raspi-i2c').I2C;
 
@@ -459,52 +459,52 @@ const userManager = {
 
 /* --- APP COMUNICACION SERIAL ---*/
 
-const port = new SerialPort(
-    "COM3",
-    {baudRate: 115200}
-)
+// const port = new SerialPort(
+//     "COM3",
+//     {baudRate: 115200}
+// )
 
-const parser = new SerialPort.parsers.Readline()
+// const parser = new SerialPort.parsers.Readline()
 
-port.pipe(parser)
+// port.pipe(parser)
 
-parser.on('data', (line)=>{
-    if(line.search('M200') != -1){      // Diametro del filamento [unit] 
-        Df = line.slice(line.search('D')+1,)
-        // console.log('Df',Df);
-    }
-    if(line.search('M301') != -1){     // Parametros PID
-        P = line.slice(line.search('P')+1,line.search('I')-1);
-        I = line.slice(line.search('I')+1,line.search('D')-1);
-        D = line.slice(line.search('D')+1,);
-        // console.log('P',P,'I',I,'D',D);
-    }
-    if(line.search('Error') != -1){     // Mensaje de error impresora
-        errImp = line.slice(line.search(':')+1,);
-        console.log('error impresora',errImp);
-    }
-    if(line.search("T:") != -1){
-        Te = Number(line.slice(line.search('T')+2,line.search('/')-1));
-        Tb = Number(line.slice(line.search('B')+2,line.search('@')-7));
-        // console.log("Tb =",Tb);
-        // console.log("Te =",Te);
-    }
-    console.log(line);
-})
+// parser.on('data', (line)=>{
+//     if(line.search('M200') != -1){      // Diametro del filamento [unit] 
+//         Df = line.slice(line.search('D')+1,)
+//         // console.log('Df',Df);
+//     }
+//     if(line.search('M301') != -1){     // Parametros PID
+//         P = line.slice(line.search('P')+1,line.search('I')-1);
+//         I = line.slice(line.search('I')+1,line.search('D')-1);
+//         D = line.slice(line.search('D')+1,);
+//         // console.log('P',P,'I',I,'D',D);
+//     }
+//     if(line.search('Error') != -1){     // Mensaje de error impresora
+//         errImp = line.slice(line.search(':')+1,);
+//         console.log('error impresora',errImp);
+//     }
+//     if(line.search("T:") != -1){
+//         Te = Number(line.slice(line.search('T')+2,line.search('/')-1));
+//         Tb = Number(line.slice(line.search('B')+2,line.search('@')-7));
+//         // console.log("Tb =",Tb);
+//         // console.log("Te =",Te);
+//     }
+//     console.log(line);
+// })
 
 
-port.on('open', function(){
-    console.log('puerto serial abierto');
-});
+// port.on('open', function(){
+//     console.log('puerto serial abierto');
+// });
 
-port.on('err', function(err){
-    console.log("Fallo con la conexion serial");
-});
+// port.on('err', function(err){
+//     console.log("Fallo con la conexion serial");
+// });
 
-setTimeout(()=>{
-    port.write("M155 S2\r\n");  // Pedir temperaturas cada 4 segundos (Evita errores en la impresion)
-    // port.write("M115\r\n")      // Informacion del Firmware
-},10000)
+// setTimeout(()=>{
+//     port.write("M155 S2\r\n");  // Pedir temperaturas cada 4 segundos (Evita errores en la impresion)
+//     // port.write("M115\r\n")      // Informacion del Firmware
+// },10000)
 
 // const ADS1115 = require('ads1115')
 // const i2c = require('i2c-bus')

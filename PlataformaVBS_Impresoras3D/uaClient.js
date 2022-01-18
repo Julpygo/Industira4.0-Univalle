@@ -16,7 +16,8 @@ gcodes = 'inicial';
 
 /* --- CONSTANTES DEL SERVIDOR UA ---*/
 
-const endpointUrl = "opc.tcp://" + require("os").hostname() + ":4334/UA/ImpresoraServer";
+const endpointUrl = "opc.tcp://" + require("os").hostname() + ".CARVAJAL.COM.CO:4334/UA/ImpresoraServer";
+// const endpointUrl = "opc.tcp://" + require("os").hostname() + ":4334/UA/ImpresoraServer";
 const nodeIdToMonitorTb = "ns=1;i=1322";   //Tb
 const nodeIdToMonitorTe = "ns=1;i=1328";   //Te
 const nodeIdToMonitorP = "ns=1;i=1368";   //P
