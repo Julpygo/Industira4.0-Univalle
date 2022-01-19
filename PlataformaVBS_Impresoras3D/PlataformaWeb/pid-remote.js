@@ -100,6 +100,11 @@ CONECTAR AL SOCKET Y LEER EL MENSAJE
 
 socket.on("Tb", function(dataValue){
     drawLine(dataValue.value);
+    AssetId = dataValue.Id;
+    idAseet = document.getElementById("Id")
+    ctx = idAseet.getContext("2d");
+    ctx.font = "30px Arial";
+    ctx.fillText(AssetId,100,50);
 });
 
 socket.on("Te", function(dataValue){

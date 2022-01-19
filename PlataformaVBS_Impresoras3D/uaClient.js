@@ -1,7 +1,7 @@
 /*--- IMPORTACION DE MODULOS --- */
 
 const { OPCUAClient, AttributeIds, TimestampsToReturn, Variant, DataType, MonitoringMode} = require("node-opcua");
-const MongoClient = require('mongodb').MongoClient;
+// const MongoClient = require('mongodb').MongoClient;
 const {cyan, bgRed, yellow} = require("chalk");
 const SocketIO = require('socket.io');
 const express = require("express");
@@ -20,15 +20,17 @@ const endpointUrl = "opc.tcp://" + require("os").hostname() + ".CARVAJAL.COM.CO:
 // const endpointUrl = "opc.tcp://" + require("os").hostname() + ":4334/UA/ImpresoraServer";
 const nodeIdToMonitorTb = "ns=1;i=1322";   //Tb
 const nodeIdToMonitorTe = "ns=1;i=1328";   //Te
+const nodeIdToMonitorTm = "ns=1;i=1354";  
 const nodeIdToMonitorP = "ns=1;i=1368";   //P
 const nodeIdToMonitorI = "ns=1;i=1369";   //I
 const nodeIdToMonitorD = "ns=1;i=1370";   //D
 const nodeIdToMonitorErr = "ns=1;i=1341";   // Error
+const nodeAssetId = "ns=1;i=1024";
 
 /* --- CONSTASTES MONGO DB ---*/
 
 const uri = "mongodb+srv://lianju:Yuligb1996@cluster0.z4spe.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
-const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopology: true});
+// const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopology: true});
 
 
 /* --- CLIENTE UA --- */
@@ -65,6 +67,7 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
 
     /* --- DEFINIR ITEMS A MONITOREAR --- */
 
+    const itemToMonitorTm = {nodeId: nodeIdToMonitorTm, AttributeIds: AttributeIds.Value};
     const itemToMonitorP = {nodeId: nodeIdToMonitorP, AttributeIds: AttributeIds.Value};
     const itemToMonitorI = {nodeId: nodeIdToMonitorI, AttributeIds: AttributeIds.Value};
     const itemToMonitorD = {nodeId: nodeIdToMonitorD, AttributeIds: AttributeIds.Value};
@@ -80,6 +83,7 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
 
     /* --- INICIAR MONITOREO POR SUBSCRIBCION --- */
 
+    const monitoredItemTm = await subscription.monitor(itemToMonitorTm, parameters, TimestampsToReturn.Both);
     const monitoredItemP = await subscription.monitor(itemToMonitorP, parameters, TimestampsToReturn.Both);
     const monitoredItemI = await subscription.monitor(itemToMonitorI, parameters, TimestampsToReturn.Both);
     const monitoredItemD = await subscription.monitor(itemToMonitorD, parameters, TimestampsToReturn.Both);
@@ -87,97 +91,126 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     
     /* --- CONEXION A LA BASE DE DATOS --- */
 
-    await clientmongo.connect();
-    const collection = clientmongo.db("VarImpresora3D").collection("Historial de datos"); 
+    // await clientmongo.connect();
+    // const collection = clientmongo.db("VarImpresora3D").collection("Historial de datos"); 
 
     /* --- ACTUALIZACION DE VARIABLES EN MONGO Y EN APP WEB --- */
 
+    session.read(nodeToRead = {nodeId: nodeAssetId, attributeId: AttributeIds.value},(err,data)=>{
+      AssetId = data.value.value
+    });
+
     setInterval(()=>{
-      session.read(nodeToRead = {nodeId: "ns=1;i=1322", attributeId: AttributeIds.Value},(err, data)=>{
+      session.read(nodeToRead = {nodeId: nodeIdToMonitorTb, attributeId: AttributeIds.Value},(err, data)=>{
         /* --- ACTUALIZACION EN MONGO --- */
-        collection.insertOne({
-          Variable: "Tb",
-          valor: data.value.value, 
-          tiempo: data.serverTimestamp
-        });
+        // collection.insertOne({
+        //   Variable: "Tb",
+        //   valor: data.value.value, 
+        //   tiempo: data.serverTimestamp,
+        //   Id: AssetId
+        // });
         /* --- ACTUALIZACION EN APP WEB --- */
         io.sockets.emit("Tb", {
         value: data.value.value,
         timestamp: data.serverTimestamp,
-        browseName: "Tb"
+        browseName: "Tb",
+        Id: AssetId
         });
       })
     },2000)
 
     setInterval(()=>{
-      session.read(nodeToRead = {nodeId: "ns=1;i=1328", attributeId: AttributeIds.Value},(err, data)=>{
+      session.read(nodeToRead = {nodeId: nodeIdToMonitorTe, attributeId: AttributeIds.Value},(err, data)=>{
         /* --- ACTUALIZACION EN MONGO --- */
-        collection.insertOne({
-          Variable: "Te",
-          valor: data.value.value, 
-          tiempo: data.serverTimestamp
-        });
+        // collection.insertOne({
+        //   Variable: "Te",
+        //   valor: data.value.value, 
+        //   tiempo: data.serverTimestamp,
+        //   Id: AssetId
+        // });
         /* --- ACTUALIZACION EN APP WEB --- */
         io.sockets.emit("Te", {
         value: data.value.value,
         timestamp: data.serverTimestamp,
-        browseName: "Te"
+        browseName: "Te",
+        Id: AssetId
         });
       })
     },2000)
 
+    monitoredItemTm.on("changed", (dataValue) => {
+      /* --- ACTUALIZACION EN MONGO --- */
+      // collection.insertOne({
+      //   Variable: "Tm",
+      //   valor: dataValue.value.value, 
+      //   tiempo: dataValue.serverTimestamp,
+      //   Id: AssetId
+      // });
+
+      /* --- ACTUALIZACION EN APP WEB --- */
+      io.sockets.emit("Tm", {
+        value: dataValue.value.value,
+        timestamp: dataValue.serverTimestamp,
+        browseName: "Tm",
+        Id: AssetId
+      });
+    });
 
     monitoredItemP.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-
-      collection.insertOne({
-        Variable: "P",
-        valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp
-      });
+      // collection.insertOne({
+      //   Variable: "P",
+      //   valor: dataValue.value.value, 
+      //   tiempo: dataValue.serverTimestamp,
+      //   Id: AssetId
+      // });
 
       /* --- ACTUALIZACION EN APP WEB --- */
-
       io.sockets.emit("P", {
         value: dataValue.value.value,
         timestamp: dataValue.serverTimestamp,
-        browseName: "P"
+        browseName: "P",
+        Id: AssetId
       });
     });
     
     monitoredItemI.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
 
-      collection.insertOne({
-        Variable: "I",
-        valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp
-      });
+      // collection.insertOne({
+      //   Variable: "I",
+      //   valor: dataValue.value.value, 
+      //   tiempo: dataValue.serverTimestamp,
+      //   Id: AssetId
+      // });
 
       /* --- ACTUALIZACION EN APP WEB --- */
 
       io.sockets.emit("I", {
         value: dataValue.value.value,
         timestamp: dataValue.serverTimestamp,
-        browseName: "I"
+        browseName: "I",
+        Id: AssetId
       });
     });
 
     monitoredItemD.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
 
-      collection.insertOne({
-        Variable: "D",
-        valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp
-      });
+      // collection.insertOne({
+      //   Variable: "D",
+      //   valor: dataValue.value.value, 
+      //   tiempo: dataValue.serverTimestamp,
+      //   Id: AssetId
+      // });
 
       /* --- ACTUALIZACION EN APP WEB --- */
 
       io.sockets.emit("D", {
         value: dataValue.value.value,
         timestamp: dataValue.serverTimestamp,
-        browseName: "D"
+        browseName: "D",
+        Id: AssetId
       });
     });
 
@@ -186,18 +219,21 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     monitoredItemErr.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
 
-      collection.insertOne({
-        Variable: "Error",
-        valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp
-      });
+      // collection.insertOne({
+      //   Variable: "Error",
+      //   valor: dataValue.value.value, 
+      //   tiempo: dataValue.serverTimestamp,
+      //   Id: AssetId
+      // });
       io.sockets.emit("Error", {
         timestamp:dataValue.serverTimestamp,
-        value:dataValue.value.value
+        value:dataValue.value.value,
+        Id: AssetId
       });
       event.emit("Error", {
         tiempo:dataValue.serverTimestamp,
-        valor:dataValue.value.value
+        valor:dataValue.value.value,
+        Id: AssetId
       });
     });
 
@@ -206,7 +242,7 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     Gcode = () => { 
       session.call([{
         objectId: "ns=1;i=1031",    // nodeId del componentOf
-        methodId: "ns=1;i=1344",    // nodeIde del metodo
+        methodId: "ns=1;i=1350",    // nodeIde del metodo
         inputArguments: [
           new Variant({dataType: DataType.String, value: gcodes})
         ]
@@ -297,29 +333,29 @@ console.log("visit http://localhost:" + port);
 
 /* --- NOTIFICADOR DE ERROR --- */
 /* --- CREAR OBJETO REUTILIZABLE SMTP  --- */
-let transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'gomez.julian@correounivalle.edu.co', // generated ethereal user 
-    pass: 'ovgr wuhq eahx yqhg', // generated ethereal password 
-  },
-});
-event.on("Error", (data) => {
-  var mailOptions = {
-    from: 'gomez.julian@correounivalle.edu.co',
-    to: 'julian-gomes@outlook.com',
-    subject: 'Alarma prueba',
-    html: `
-    <h2>Se ha detectado una anomalia en su Impresora 3D. Si deseas autorizar una revision para garantizar su optimo funcionamiento u obtener mas información:</h2> 
-    <h1><a href="http://localhost:3000/autorizacion.html">HAZ CLIC AQUI </a></h1>
-    <h2>Por favor copie y pegue el siguiente valor en el formulario:<br>
-    Fecha de la falla: ${data.tiempo}</h2>`
-  };
-  transporter.sendMail(mailOptions, function(error, info){
-    if (error) {
-      console.log(error);
-    } else {
-      console.log('Email enviado: ' + info.response);
-    }
-  });
-})
+// let transporter = nodemailer.createTransport({
+//   service: 'gmail',
+//   auth: {
+//     user: 'gomez.julian@correounivalle.edu.co', // generated ethereal user 
+//     pass: 'ovgr wuhq eahx yqhg', // generated ethereal password 
+//   },
+// });
+// event.on("Error", (data) => {
+//   var mailOptions = {
+//     from: 'gomez.julian@correounivalle.edu.co',
+//     to: 'julian-gomes@outlook.com',
+//     subject: 'Alarma prueba',
+//     html: `
+//     <h2>Se ha detectado la falla ${data.valor} en su Impresora 3D ${data.Id}. Si deseas autorizar una revision para garantizar su optimo funcionamiento u obtener mas información:</h2> 
+//     <h1><a href="http://localhost:3000/autorizacion.html">HAZ CLIC AQUI </a></h1>
+//     <h2>Por favor copie y pegue el siguiente valor en el formulario:<br>
+//     Fecha de la falla: ${data.tiempo}</h2>`
+//   };
+//   transporter.sendMail(mailOptions, function(error, info){
+//     if (error) {
+//       console.log(error);
+//     } else {
+//       console.log('Email enviado: ' + info.response);
+//     }
+//   });
+// })

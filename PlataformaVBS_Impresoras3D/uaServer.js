@@ -19,7 +19,7 @@ const chalk = require("chalk");
 
 /* --- VARIABLES GLOBALES --- */
 
-Tb = ''; Te = '';   
+Tb = ''; Te = ''; Tm = '';   
 P = ''; I = ''; D = '';   // PID hottend 
 // Parametros
 Df = ''; PasosE = ''; PasosX = ''; PasosY = ''; PasosZ = ''; 
@@ -258,6 +258,19 @@ const userManager = {
             dataType: "Double",
             value: {
                 get: () => new Variant({ dataType: DataType.Double, value: Te})
+            },
+        });
+        const TempMotor = namespace.addAnalogDataItem({
+            componentOf: SMOperational,
+            browseName: "TempMotor",
+            definition: "Temperatura del motor eje y",
+            valuePrecision: 0.01,
+            engineeringUnitsRange: { low: 100, high: 200 },
+            instrumentRange: { low: -100, high: +200 },
+            engineeringUnits: standardUnits.degree_celsius,
+            dataType: "Double",
+            value: {
+                get: () => new Variant({ dataType: DataType.Double, value: Tm})
             },
         });
         const CncMessage = CncMessageType.instantiate({
@@ -521,8 +534,8 @@ const userManager = {
 //   for (let i = 0; i < 1000; i++) {
 //     let rawValue = await ads1115.measure('3+GND')
 //     let v0 = multiplier*rawValue
-//     let temperatura = (B/Math.log(v0/(Ic*A)))-273.15
+//     let Tm = (B/Math.log(v0/(Ic*A)))-273.15
 
-//     console.log("rawValue",rawValue,"Temperatura",temperatura,"°C")
+//     console.log("rawValue",rawValue,"Temperatura",Tm,"°C")
 //   }
 // })
