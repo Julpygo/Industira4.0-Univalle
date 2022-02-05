@@ -1,6 +1,6 @@
 /*--- IMPORTACION DE MODULOS --- */
 
-const { OPCUAClient, AttributeIds, TimestampsToReturn, Variant, DataType, MonitoringMode} = require("node-opcua");
+const { OPCUAClient, AttributeIds, TimestampsToReturn, Variant, DataType} = require("node-opcua");
 const MongoClient = require('mongodb').MongoClient;
 const {cyan, bgRed, yellow} = require("chalk");
 const SocketIO = require('socket.io');
@@ -16,13 +16,18 @@ gcodes = 'inicial';
 
 /* --- CONSTANTES DEL SERVIDOR UA ---*/
 
+// const endpointUrl = "opc.tcp://" + require("os").hostname() + ".CARVAJAL.COM.CO:4334/UA/ImpresoraServer";
 const endpointUrl = "opc.tcp://" + require("os").hostname() + ":4334/UA/ImpresoraServer";
 const nodeIdToMonitorTb = "ns=1;i=1322";   //Tb
 const nodeIdToMonitorTe = "ns=1;i=1328";   //Te
-const nodeIdToMonitorP = "ns=1;i=1368";   //P
-const nodeIdToMonitorI = "ns=1;i=1369";   //I
-const nodeIdToMonitorD = "ns=1;i=1370";   //D
-const nodeIdToMonitorErr = "ns=1;i=1341";   // Error
+const nodeIdToMonitorTm = "ns=1;i=1354";  
+const nodeIdToMonitorP = "ns=1;i=1374";   //P
+const nodeIdToMonitorI = "ns=1;i=1375";   //I
+const nodeIdToMonitorD = "ns=1;i=1376";   //D
+const nodeIdToMonitorErr = "ns=1;i=1347";   // Error
+const readserial = "ns=1;i=1349"
+const nodeAssetId = "ns=1;i=1024";
+contador = 0;
 
 /* --- CONSTASTES MONGO DB ---*/
 
@@ -64,10 +69,12 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
 
     /* --- DEFINIR ITEMS A MONITOREAR --- */
 
+    const itemToMonitorTm = {nodeId: nodeIdToMonitorTm, AttributeIds: AttributeIds.Value};
     const itemToMonitorP = {nodeId: nodeIdToMonitorP, AttributeIds: AttributeIds.Value};
     const itemToMonitorI = {nodeId: nodeIdToMonitorI, AttributeIds: AttributeIds.Value};
     const itemToMonitorD = {nodeId: nodeIdToMonitorD, AttributeIds: AttributeIds.Value};
     const itemToMonitorErr = {nodeId: nodeIdToMonitorErr, AttributeIds: AttributeIds.Value};
+    const itemReadSerial = {nodeId: readserial, attributeId: AttributeIds.Value}
 
     /* --- DEFINIR PARAMETROS DE SUSCRIPCION --- */
 
@@ -79,10 +86,12 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
 
     /* --- INICIAR MONITOREO POR SUBSCRIBCION --- */
 
+    const monitoredItemTm = await subscription.monitor(itemToMonitorTm, parameters, TimestampsToReturn.Both);
     const monitoredItemP = await subscription.monitor(itemToMonitorP, parameters, TimestampsToReturn.Both);
     const monitoredItemI = await subscription.monitor(itemToMonitorI, parameters, TimestampsToReturn.Both);
     const monitoredItemD = await subscription.monitor(itemToMonitorD, parameters, TimestampsToReturn.Both);
     const monitoredItemErr = await subscription.monitor(itemToMonitorErr, parameters, TimestampsToReturn.Both);
+    const monitorReadSerial = await subscription.monitor(itemReadSerial, parameters, TimestampsToReturn.Both);
     
     /* --- CONEXION A LA BASE DE DATOS --- */
 
@@ -91,66 +100,103 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
 
     /* --- ACTUALIZACION DE VARIABLES EN MONGO Y EN APP WEB --- */
 
+    session.read(nodeToRead = {nodeId: nodeAssetId, attributeId: AttributeIds.value},(err,data)=>{
+      AssetId = data.value.value
+    });
+
     setInterval(()=>{
-      session.read(nodeToRead = {nodeId: "ns=1;i=1322", attributeId: AttributeIds.Value},(err, data)=>{
-        /* --- ACTUALIZACION EN MONGO --- */
-        collection.insertOne({
-          Variable: "Tb",
-          valor: data.value.value, 
-          tiempo: data.serverTimestamp
-        });
-        /* --- ACTUALIZACION EN APP WEB --- */
-        io.sockets.emit("Tb", {
-        value: data.value.value,
-        timestamp: data.serverTimestamp,
-        browseName: "Tb"
-        });
+      session.read(nodeToRead = {nodeId: nodeIdToMonitorTb, attributeId: AttributeIds.Value},(err, data)=>{
+        if(!err){
+          /* --- ACTUALIZACION EN MONGO --- */
+          collection.insertOne({
+            Variable: "Tb",
+            valor: data.value.value, 
+            tiempo: data.serverTimestamp,
+            Id: AssetId
+          });
+          /* --- ACTUALIZACION EN APP WEB --- */
+          io.sockets.emit("Tb", {
+          value: data.value.value,
+          timestamp: data.serverTimestamp,
+          browseName: "Tb",
+          Id: AssetId
+          });
+        }
       })
     },2000)
 
     setInterval(()=>{
-      session.read(nodeToRead = {nodeId: "ns=1;i=1328", attributeId: AttributeIds.Value},(err, data)=>{
-        /* --- ACTUALIZACION EN MONGO --- */
-        collection.insertOne({
-          Variable: "Te",
-          valor: data.value.value, 
-          tiempo: data.serverTimestamp
-        });
-        /* --- ACTUALIZACION EN APP WEB --- */
-        io.sockets.emit("Te", {
-        value: data.value.value,
-        timestamp: data.serverTimestamp,
-        browseName: "Te"
-        });
+      session.read(nodeToRead = {nodeId: nodeIdToMonitorTe, attributeId: AttributeIds.Value},(err, data)=>{
+        if(!err){
+          /* --- ACTUALIZACION EN MONGO --- */
+          collection.insertOne({
+            Variable: "Te",
+            valor: data.value.value, 
+            tiempo: data.serverTimestamp,
+            Id: AssetId
+          });
+          /* --- ACTUALIZACION EN APP WEB --- */
+          io.sockets.emit("Te", {
+          value: data.value.value,
+          timestamp: data.serverTimestamp,
+          browseName: "Te",
+          Id: AssetId
+          });
+        }
       })
     },2000)
 
-
-    monitoredItemP.on("changed", (dataValue) => {
+    monitorReadSerial.on("changed", (dataValue) => {
+      console.log(dataValue.value.value);
+      /* --- ACTUALIZACION EN APP WEB --- */
+      io.sockets.emit("readserial", {
+        value: dataValue.value.value,
+        Id: AssetId
+      });
+    })
+    monitoredItemTm.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-
       collection.insertOne({
-        Variable: "P",
+        Variable: "Tm",
         valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp
+        tiempo: dataValue.serverTimestamp,
+        Id: AssetId
       });
 
       /* --- ACTUALIZACION EN APP WEB --- */
+      io.sockets.emit("Tm", {
+        value: dataValue.value.value,
+        timestamp: dataValue.serverTimestamp,
+        browseName: "Tm",
+        Id: AssetId
+      });
+    });
 
+    monitoredItemP.on("changed", (dataValue) => {
+      /* --- ACTUALIZACION EN MONGO --- */
+      collection.insertOne({
+        Variable: "P",
+        valor: dataValue.value.value, 
+        tiempo: dataValue.serverTimestamp,
+        Id: AssetId
+      });
+
+      /* --- ACTUALIZACION EN APP WEB --- */
       io.sockets.emit("P", {
         value: dataValue.value.value,
         timestamp: dataValue.serverTimestamp,
-        browseName: "P"
+        browseName: "P",
+        Id: AssetId
       });
     });
     
     monitoredItemI.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-
       collection.insertOne({
         Variable: "I",
         valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp
+        tiempo: dataValue.serverTimestamp,
+        Id: AssetId
       });
 
       /* --- ACTUALIZACION EN APP WEB --- */
@@ -158,17 +204,18 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
       io.sockets.emit("I", {
         value: dataValue.value.value,
         timestamp: dataValue.serverTimestamp,
-        browseName: "I"
+        browseName: "I",
+        Id: AssetId
       });
     });
 
     monitoredItemD.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-
       collection.insertOne({
         Variable: "D",
         valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp
+        tiempo: dataValue.serverTimestamp,
+        Id: AssetId
       });
 
       /* --- ACTUALIZACION EN APP WEB --- */
@@ -176,7 +223,8 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
       io.sockets.emit("D", {
         value: dataValue.value.value,
         timestamp: dataValue.serverTimestamp,
-        browseName: "D"
+        browseName: "D",
+        Id: AssetId
       });
     });
 
@@ -184,20 +232,23 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
 
     monitoredItemErr.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-
       collection.insertOne({
         Variable: "Error",
-        valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp
+        valor: dataValue.value.value[contador]["text"], 
+        tiempo: dataValue.serverTimestamp,
+        Id: AssetId
       });
       io.sockets.emit("Error", {
         timestamp:dataValue.serverTimestamp,
-        value:dataValue.value.value
+        value:dataValue.value.value[contador]["text"],
+        Id: AssetId
       });
       event.emit("Error", {
         tiempo:dataValue.serverTimestamp,
-        valor:dataValue.value.value
+        valor:dataValue.value.value[contador]["text"],
+        Id: AssetId
       });
+      contador++;
     });
 
     /* --- FUNCION GLOBAL PARA INVOCAR METODO --- */
@@ -205,7 +256,7 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     Gcode = () => { 
       session.call([{
         objectId: "ns=1;i=1031",    // nodeId del componentOf
-        methodId: "ns=1;i=1344",    // nodeIde del metodo
+        methodId: "ns=1;i=1350",    // nodeIde del metodo
         inputArguments: [
           new Variant({dataType: DataType.String, value: gcodes})
         ]
@@ -292,15 +343,15 @@ io.on('connection', (socket) => {
 
 console.log("visit http://localhost:" + port); 
 
-
-
 /* --- NOTIFICADOR DE ERROR --- */
 /* --- CREAR OBJETO REUTILIZABLE SMTP  --- */
+const options = { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric'};
+
 let transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: 'gomez.julian@correounivalle.edu.co', // generated ethereal user 
-    pass: 'ovgr wuhq eahx yqhg', // generated ethereal password 
+    pass: 'mgvm jraj lkii ddsq', // generated ethereal password 
   },
 });
 event.on("Error", (data) => {
@@ -309,10 +360,11 @@ event.on("Error", (data) => {
     to: 'julian-gomes@outlook.com',
     subject: 'Alarma prueba',
     html: `
-    <h2>Se ha detectado una anomalia en su Impresora 3D. Si deseas autorizar una revision para garantizar su optimo funcionamiento u obtener mas información:</h2> 
+    <h2>Se ha detectado la falla ${data.valor} en su Impresora ${data.Id}. Si deseas autorizar una revision para garantizar su optimo funcionamiento u obtener mas información:</h2> 
     <h1><a href="http://localhost:3000/autorizacion.html">HAZ CLIC AQUI </a></h1>
     <h2>Por favor copie y pegue el siguiente valor en el formulario:<br>
-    Fecha de la falla: ${data.tiempo}</h2>`
+    Registro de falla: <p style="color:#FF0000";>${data.Id}-${data.valor}_${data.tiempo.toLocaleDateString(undefined, options)}</p></h2>
+    `
   };
   transporter.sendMail(mailOptions, function(error, info){
     if (error) {
