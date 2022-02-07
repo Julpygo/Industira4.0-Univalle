@@ -256,7 +256,7 @@ contador = 0;
     Gcode = () => { 
       session.call([{
         objectId: "ns=1;i=1031",    // nodeId del componentOf
-        methodId: "ns=1;i=1350",    // nodeIde del metodo
+        methodId: "ns=1;i=1351",    // nodeIde del metodo
         inputArguments: [
           new Variant({dataType: DataType.String, value: gcodes})
         ]

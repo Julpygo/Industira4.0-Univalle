@@ -506,6 +506,7 @@ parser.on('data', (line)=>{
         if(line.search('Error') != -1){     // Mensaje de error impresora
             errImp = line.slice(line.search(':')+1,);
         }
+        console.log(readserial)
     }
 })
 
