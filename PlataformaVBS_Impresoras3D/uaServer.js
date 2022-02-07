@@ -480,7 +480,7 @@ const userManager = {
 /* --- APP COMUNICACION SERIAL ---*/
 
 const port = new SerialPort(
-    "COM3",
+    "/dev/ttyACM1",
     {baudRate: 115200}
 )
 
