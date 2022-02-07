@@ -20,7 +20,7 @@ gcodes = 'inicial';
 const endpointUrl = "opc.tcp://" + require("os").hostname() + ":4334/UA/ImpresoraServer";
 const nodeIdToMonitorTb = "ns=1;i=1322";   //Tb
 const nodeIdToMonitorTe = "ns=1;i=1328";   //Te
-const nodeIdToMonitorTm = "ns=1;i=1354";  
+const nodeIdToMonitorTm = "ns=1;i=1334";  
 const nodeIdToMonitorP = "ns=1;i=1374";   //P
 const nodeIdToMonitorI = "ns=1;i=1375";   //I
 const nodeIdToMonitorD = "ns=1;i=1376";   //D
@@ -31,8 +31,8 @@ contador = 0;
 
 /* --- CONSTASTES MONGO DB ---*/
 
-const uri = "mongodb+srv://lianju:Yuligb1996@cluster0.z4spe.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
-const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopology: true});
+// const uri = "mongodb+srv://lianju:Yuligb1996@cluster0.z4spe.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
+// const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopology: true});
 
 
 /* --- CLIENTE UA --- */
@@ -95,8 +95,8 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     
     /* --- CONEXION A LA BASE DE DATOS --- */
 
-    await clientmongo.connect();
-    const collection = clientmongo.db("VarImpresora3D").collection("Historial de datos"); 
+    // await clientmongo.connect();
+    // const collection = clientmongo.db("VarImpresora3D").collection("Historial de datos"); 
 
     /* --- ACTUALIZACION DE VARIABLES EN MONGO Y EN APP WEB --- */
 
@@ -107,13 +107,13 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     setInterval(()=>{
       session.read(nodeToRead = {nodeId: nodeIdToMonitorTb, attributeId: AttributeIds.Value},(err, data)=>{
         if(!err){
-          /* --- ACTUALIZACION EN MONGO --- */
-          collection.insertOne({
-            Variable: "Tb",
-            valor: data.value.value, 
-            tiempo: data.serverTimestamp,
-            Id: AssetId
-          });
+          // /* --- ACTUALIZACION EN MONGO --- */
+          // collection.insertOne({
+          //   Variable: "Tb",
+          //   valor: data.value.value, 
+          //   tiempo: data.serverTimestamp,
+          //   Id: AssetId
+          // });
           /* --- ACTUALIZACION EN APP WEB --- */
           io.sockets.emit("Tb", {
           value: data.value.value,
@@ -129,12 +129,12 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
       session.read(nodeToRead = {nodeId: nodeIdToMonitorTe, attributeId: AttributeIds.Value},(err, data)=>{
         if(!err){
           /* --- ACTUALIZACION EN MONGO --- */
-          collection.insertOne({
-            Variable: "Te",
-            valor: data.value.value, 
-            tiempo: data.serverTimestamp,
-            Id: AssetId
-          });
+          // collection.insertOne({
+          //   Variable: "Te",
+          //   valor: data.value.value, 
+          //   tiempo: data.serverTimestamp,
+          //   Id: AssetId
+          // });
           /* --- ACTUALIZACION EN APP WEB --- */
           io.sockets.emit("Te", {
           value: data.value.value,
@@ -156,12 +156,12 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     })
     monitoredItemTm.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-      collection.insertOne({
-        Variable: "Tm",
-        valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp,
-        Id: AssetId
-      });
+      // collection.insertOne({
+      //   Variable: "Tm",
+      //   valor: dataValue.value.value, 
+      //   tiempo: dataValue.serverTimestamp,
+      //   Id: AssetId
+      // });
 
       /* --- ACTUALIZACION EN APP WEB --- */
       io.sockets.emit("Tm", {
@@ -174,12 +174,12 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
 
     monitoredItemP.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-      collection.insertOne({
-        Variable: "P",
-        valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp,
-        Id: AssetId
-      });
+      // collection.insertOne({
+      //   Variable: "P",
+      //   valor: dataValue.value.value, 
+      //   tiempo: dataValue.serverTimestamp,
+      //   Id: AssetId
+      // });
 
       /* --- ACTUALIZACION EN APP WEB --- */
       io.sockets.emit("P", {
@@ -192,12 +192,12 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
     
     monitoredItemI.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-      collection.insertOne({
-        Variable: "I",
-        valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp,
-        Id: AssetId
-      });
+      // collection.insertOne({
+      //   Variable: "I",
+      //   valor: dataValue.value.value, 
+      //   tiempo: dataValue.serverTimestamp,
+      //   Id: AssetId
+      // });
 
       /* --- ACTUALIZACION EN APP WEB --- */
 
@@ -211,12 +211,12 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
 
     monitoredItemD.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-      collection.insertOne({
-        Variable: "D",
-        valor: dataValue.value.value, 
-        tiempo: dataValue.serverTimestamp,
-        Id: AssetId
-      });
+      // collection.insertOne({
+      //   Variable: "D",
+      //   valor: dataValue.value.value, 
+      //   tiempo: dataValue.serverTimestamp,
+      //   Id: AssetId
+      // });
 
       /* --- ACTUALIZACION EN APP WEB --- */
 
@@ -232,12 +232,12 @@ const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopol
 
     monitoredItemErr.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-      collection.insertOne({
-        Variable: "Error",
-        valor: dataValue.value.value[contador]["text"], 
-        tiempo: dataValue.serverTimestamp,
-        Id: AssetId
-      });
+      // collection.insertOne({
+      //   Variable: "Error",
+      //   valor: dataValue.value.value[contador]["text"], 
+      //   tiempo: dataValue.serverTimestamp,
+      //   Id: AssetId
+      // });
       io.sockets.emit("Error", {
         timestamp:dataValue.serverTimestamp,
         value:dataValue.value.value[contador]["text"],

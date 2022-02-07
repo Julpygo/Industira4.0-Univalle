@@ -539,7 +539,5 @@ i2c.openPromisified(1).then(async (bus) => {
     let rawValue = await ads1115.measure('3+GND')
     let v0 = multiplier*rawValue
     let Tm = (B/Math.log(v0/(Ic*A)))-273.15
-
-    console.log("rawValue",rawValue,"Temperatura",Tm,"°C")
   }
 })
