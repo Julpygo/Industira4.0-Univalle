@@ -7,15 +7,16 @@ const socket = io();
 /*** variables para los objetos de graficas ***/
 let Pline = null;
 let Pline2 = null;
-let Gauge1 = null;
 let table;
 /*** variables para los datos ***/
 let data_line = [];
 let data_line2 = [];
 let data_table = [];
+let read_serial = [];
 /*** obtener los canvas ***/
 canvas1 = document.getElementById("cvs_line");
 canvas2 = document.getElementById("cvs_line2");
+readSerial = document.getElementById("readserial")
 
 const numvalues = 200;
 for (let i = 0; i < numvalues; ++i){data_line.push(null);data_line2.push(null)};
@@ -26,8 +27,8 @@ LAS GRAFICAS CUANDO SE CARGA LA PAGINA
  ***/
 window.onload = function(){
     config = {
-        xaxisLabels: ['','5','10','15','20','25','30','35','40','45','50','55','60','65','70','75','80','85','90','95','100'],
-        xaxisTickmarksCount: 21,
+        xaxisLabels: ['','','','1 min','','','2 min','','','3 min','','','4 min','','','5 min','','','6 min'],
+        xaxisTickmarksCount: 6,
         xaxis: true,
         yaxisScaleUnitsPost: ' °c',
         title: 'Tb vs t',
@@ -60,7 +61,7 @@ window.onload = function(){
 
     table = new Tabulator("#alarm-table", {
         height:200,
-        layout:"fitColumns",
+        layout:"fitDataTable",
         columns:[
         {title:"Tiempo", field:"t"},
         {title:"Alarma", field:"a"},
@@ -109,7 +110,6 @@ socket.on("Tb", function(dataValue){
 
 socket.on("Te", function(dataValue){
     drawLine2(dataValue.value);
-    console.log("temperatura");
 });
 
 socket.on("Error", function(dataValue){
@@ -118,6 +118,12 @@ socket.on("Error", function(dataValue){
     data_table.push({t:dataValue.timestamp, a:dataValue.value});
     table.setData(data_table);
     console.log("error");
+})
+socket.on("readserial", function(dataValue){
+    readserial = dataValue.value
+    read_serial.push(readserial)
+    readSerial.innerHTML = read_serial;
+    console.log(readserial);
 })
 
 function obtener_Gcode(){

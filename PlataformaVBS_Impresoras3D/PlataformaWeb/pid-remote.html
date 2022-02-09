@@ -14,18 +14,24 @@
 </head>
 <body>
      <div align="center">
-          <canvas id="Id"></canvas><br>
-          <canvas id="cvs_line" width="950" height="400">
+          <canvas id="Id" width="350" height="50"></canvas><br>
+          <canvas id="cvs_line" width="750" height="400">
                [No canvas support]
           </canvas>
-          <canvas id="cvs_line2" width="950" height="400">
+          <canvas id="cvs_line2" width="750" height="400">
                [No canvas support]
-          </canvas><br>
-          <textarea id="Gcodes" rows="4" cols="40" placeholder="Escriba Gcodes aqui"></textarea><br>
-          <button onclick="obtener_Gcode()">Enviar</button>
-
-          <h3>Alarmas</h3>
-          <div id="alarm-table"></div>
+          </canvas><br><br><br>
+          <div id="columnas" style="column-count:2;column-gap:5%;column-rule:4px double black;list-style:none;">
+               <li align="right"><textarea id="Gcodes" rows="1" cols="35" placeholder="Escriba Gcodes aqui" ></textarea>
+                    <button onclick="obtener_Gcode()" style="height: 30px" >Enviar</button><br>
+                    <table border="1" align="right">       
+                    <tr><td id="readserial" style="height: 150px;overflow-y:scroll;width:400px;"><br></td></tr>
+                    </table>
+               </li><br><br><br><br>
+               <li align="left">
+                    <div id="alarm-table" style="height: 350px;"></div>
+               </li>
+          </div>
           <script src="pid-remote.js"></script>
      </div>
 

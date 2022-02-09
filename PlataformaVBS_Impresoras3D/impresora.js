@@ -14,8 +14,10 @@ parser.on('data', (line)=>{
 });
 contador = 1;
 
-// setTimeout(()=>{port.write("Error:Heating failed, system stopped! Heater_ID: 0\r\n")},8000)
-// setTimeout(()=>{port.write("Error:Printer halted. kill() called!\r\n")},20000)
+// setTimeout(()=>{port.write("Error:Heating failed, system stopped! Heater_ID: 0\r\n"), console.log("Error:Heating failed, system stopped! Heater_ID: 0\r\n");},2000)
+setTimeout(()=>{port.write("Error:Printer halted. kill() called!\r\n"), console.log("Error:Printer halted. kill() called!\r\n");},8000);
+setTimeout(()=>{port.write("echo:  M301 P28.47 I2.76 D114.87\r\n"), console.log("echo:  M301 P28.47 I2.76 D114.87\r\n");},8000);
+setTimeout(()=>{port.write("echo:  M301 P28 I2 D114\r\n"), console.log("echo:  M301 P28 I2 D114\r\n");},12000);
 setInterval(()=>{
     contador++;
     var Te = Math.exp(contador/30);
