@@ -21,9 +21,9 @@ const endpointUrl = "opc.tcp://" + require("os").hostname() + ":4334/UA/Impresor
 const nodeIdToMonitorTb = "ns=1;i=1322";   //Tb
 const nodeIdToMonitorTe = "ns=1;i=1328";   //Te
 const nodeIdToMonitorTm = "ns=1;i=1334";  
-const nodeIdToMonitorP = "ns=1;i=1374";   //P
-const nodeIdToMonitorI = "ns=1;i=1375";   //I
-const nodeIdToMonitorD = "ns=1;i=1376";   //D
+const nodeIdToMonitorP = "ns=1;i=1375";   //P
+const nodeIdToMonitorI = "ns=1;i=1376";   //I
+const nodeIdToMonitorD = "ns=1;i=1377";   //D
 const nodeIdToMonitorErr = "ns=1;i=1347";   // Error
 const readserial = "ns=1;i=1349"
 const nodeAssetId = "ns=1;i=1024";
@@ -31,8 +31,8 @@ contador = 0;
 
 /* --- CONSTASTES MONGO DB ---*/
 
-// const uri = "mongodb+srv://lianju:Yuligb1996@cluster0.z4spe.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
-// const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopology: true});
+const uri = "mongodb+srv://lianju:Yuligb1996@cluster0.z4spe.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
+const clientmongo = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopology: true});
 
 
 /* --- CLIENTE UA --- */
@@ -95,8 +95,8 @@ contador = 0;
     
     /* --- CONEXION A LA BASE DE DATOS --- */
 
-    // await clientmongo.connect();
-    // const collection = clientmongo.db("VarImpresora3D").collection("Historial de datos"); 
+    await clientmongo.connect();
+    const collection = clientmongo.db("VarImpresora3D").collection("Historial de datos"); 
 
     /* --- ACTUALIZACION DE VARIABLES EN MONGO Y EN APP WEB --- */
 
@@ -107,13 +107,13 @@ contador = 0;
     setInterval(()=>{
       session.read(nodeToRead = {nodeId: nodeIdToMonitorTb, attributeId: AttributeIds.Value},(err, data)=>{
         if(!err){
-          // /* --- ACTUALIZACION EN MONGO --- */
-          // collection.insertOne({
-          //   Variable: "Tb",
-          //   valor: data.value.value, 
-          //   tiempo: data.serverTimestamp,
-          //   Id: AssetId
-          // });
+          /* --- ACTUALIZACION EN MONGO --- */
+          collection.insertOne({
+            Variable: "Tb",
+            valor: data.value.value, 
+            tiempo: data.serverTimestamp,
+            Id: AssetId
+          });
           /* --- ACTUALIZACION EN APP WEB --- */
           io.sockets.emit("Tb", {
           value: data.value.value,
@@ -129,12 +129,12 @@ contador = 0;
       session.read(nodeToRead = {nodeId: nodeIdToMonitorTe, attributeId: AttributeIds.Value},(err, data)=>{
         if(!err){
           /* --- ACTUALIZACION EN MONGO --- */
-          // collection.insertOne({
-          //   Variable: "Te",
-          //   valor: data.value.value, 
-          //   tiempo: data.serverTimestamp,
-          //   Id: AssetId
-          // });
+          collection.insertOne({
+            Variable: "Te",
+            valor: data.value.value, 
+            tiempo: data.serverTimestamp,
+            Id: AssetId
+          });
           /* --- ACTUALIZACION EN APP WEB --- */
           io.sockets.emit("Te", {
           value: data.value.value,
@@ -147,21 +147,20 @@ contador = 0;
     },2000)
 
     monitorReadSerial.on("changed", (dataValue) => {
-      console.log(dataValue.value.value);
       /* --- ACTUALIZACION EN APP WEB --- */
       io.sockets.emit("readserial", {
         value: dataValue.value.value,
         Id: AssetId
       });
-    })
+    });
     monitoredItemTm.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-      // collection.insertOne({
-      //   Variable: "Tm",
-      //   valor: dataValue.value.value, 
-      //   tiempo: dataValue.serverTimestamp,
-      //   Id: AssetId
-      // });
+      collection.insertOne({
+        Variable: "Tm",
+        valor: dataValue.value.value, 
+        tiempo: dataValue.serverTimestamp,
+        Id: AssetId
+      });
 
       /* --- ACTUALIZACION EN APP WEB --- */
       io.sockets.emit("Tm", {
@@ -174,12 +173,12 @@ contador = 0;
 
     monitoredItemP.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-      // collection.insertOne({
-      //   Variable: "P",
-      //   valor: dataValue.value.value, 
-      //   tiempo: dataValue.serverTimestamp,
-      //   Id: AssetId
-      // });
+      collection.insertOne({
+        Variable: "P",
+        valor: dataValue.value.value, 
+        tiempo: dataValue.serverTimestamp,
+        Id: AssetId
+      });
 
       /* --- ACTUALIZACION EN APP WEB --- */
       io.sockets.emit("P", {
@@ -192,12 +191,12 @@ contador = 0;
     
     monitoredItemI.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-      // collection.insertOne({
-      //   Variable: "I",
-      //   valor: dataValue.value.value, 
-      //   tiempo: dataValue.serverTimestamp,
-      //   Id: AssetId
-      // });
+      collection.insertOne({
+        Variable: "I",
+        valor: dataValue.value.value, 
+        tiempo: dataValue.serverTimestamp,
+        Id: AssetId
+      });
 
       /* --- ACTUALIZACION EN APP WEB --- */
 
@@ -211,12 +210,12 @@ contador = 0;
 
     monitoredItemD.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-      // collection.insertOne({
-      //   Variable: "D",
-      //   valor: dataValue.value.value, 
-      //   tiempo: dataValue.serverTimestamp,
-      //   Id: AssetId
-      // });
+      collection.insertOne({
+        Variable: "D",
+        valor: dataValue.value.value, 
+        tiempo: dataValue.serverTimestamp,
+        Id: AssetId
+      });
 
       /* --- ACTUALIZACION EN APP WEB --- */
 
@@ -232,12 +231,12 @@ contador = 0;
 
     monitoredItemErr.on("changed", (dataValue) => {
       /* --- ACTUALIZACION EN MONGO --- */
-      // collection.insertOne({
-      //   Variable: "Error",
-      //   valor: dataValue.value.value[contador]["text"], 
-      //   tiempo: dataValue.serverTimestamp,
-      //   Id: AssetId
-      // });
+      collection.insertOne({
+        Variable: "Error",
+        valor: dataValue.value.value[contador]["text"], 
+        tiempo: dataValue.serverTimestamp,
+        Id: AssetId
+      });
       io.sockets.emit("Error", {
         timestamp:dataValue.serverTimestamp,
         value:dataValue.value.value[contador]["text"],
@@ -256,7 +255,7 @@ contador = 0;
     Gcode = () => { 
       session.call([{
         objectId: "ns=1;i=1031",    // nodeId del componentOf
-        methodId: "ns=1;i=1351",    // nodeIde del metodo
+        methodId: "ns=1;i=1350",    // nodeIde del metodo
         inputArguments: [
           new Variant({dataType: DataType.String, value: gcodes})
         ]

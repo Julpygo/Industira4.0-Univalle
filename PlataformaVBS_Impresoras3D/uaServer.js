@@ -1,21 +1,8 @@
 /*--- IMPORTACION DE MODULOS --- */
 
-const { OPCUAServer,DataType,nodesets,
-    StatusCodes,Variant,standardUnits} = require("node-opcua");
+const {OPCUAServer,DataType,nodesets,StatusCodes,Variant,standardUnits} = require("node-opcua");
 const chalk = require("chalk");
 const SerialPort = require('serialport');
-// const raspi = require('raspi');
-// const I2C = require('raspi-i2c').I2C;
-
-/* --- Comunicacion I2C --- */
-
-// raspi.init(() => {
-//     const i2c = new I2C();
-//     setInterval(()=>{
-//         console.log(i2c.readWordSync(0x48)); // Read one byte from the device at address 18
-//     },2000)
-//   });
-
 
 /* --- VARIABLES GLOBALES --- */
 
@@ -506,7 +493,6 @@ parser.on('data', (line)=>{
         if(line.search('Error') != -1){     // Mensaje de error impresora
             errImp = line.slice(line.search(':')+1,);
         }
-        console.log(readserial)
     }
 })
 
@@ -524,21 +510,23 @@ setTimeout(()=>{
     // port.write("M115\r\n")      // Informacion del Firmware
 },10000)
 
-const ADS1115 = require('ads1115')
-const i2c = require('i2c-bus')
+// const ADS1115 = require('ads1115')
+// const i2c = require('i2c-bus')
 
-const B = 3950;
-const A = 0.0001763;
-const multiplier = 0.1875; // +-6.144 V ->0.1875 mv
-const Ic = 34; // 34 mA
+// const B = 3950;
+// const A = 0.0001763;
+// const multiplier = 0.1875; // +-6.144 V ->0.1875 mv
+// const Ic = 34; // 34 mA
 
-i2c.openPromisified(1).then(async (bus) => {
-  const ads1115 = await ADS1115(bus)
-  //ads1115.gain = 1
+// i2c.openPromisified(1).then(async (bus) => {
+//   const ads1115 = await ADS1115(bus)
+//   //ads1115.gain = 1
 
-  while (true){
-    let rawValue = await ads1115.measure('3+GND')
-    let v0 = multiplier*rawValue
-    let Tm = (B/Math.log(v0/(Ic*A)))-273.15
-  }
-})
+//   while (true){
+//     let rawValue = await ads1115.measure('3+GND')
+//     let v0 = multiplier*rawValue
+//     let Tm = (B/Math.log(v0/(Ic*A)))-273.15
+
+//     console.log("rawValue",rawValue,"Temperatura",Tm,"°C")
+//   }
+// })

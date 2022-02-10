@@ -12,7 +12,7 @@ let table;
 let data_line = [];
 let data_line2 = [];
 let data_table = [];
-let read_serial = [];
+let arraySerial = [];
 /*** obtener los canvas ***/
 canvas1 = document.getElementById("cvs_line");
 canvas2 = document.getElementById("cvs_line2");
@@ -117,14 +117,12 @@ socket.on("Error", function(dataValue){
     data_table = table.getData();
     data_table.push({t:dataValue.timestamp, a:dataValue.value});
     table.setData(data_table);
-    console.log("error");
 })
 socket.on("readserial", function(dataValue){
-    readserial = dataValue.value
-    read_serial.push(readserial)
-    readSerial.innerHTML = read_serial;
-    console.log(readserial);
-})
+    getSerial = dataValue.value;
+    arraySerial.push(getSerial);
+    readSerial.innerHTML = arraySerial;
+});
 
 function obtener_Gcode(){
     let Gcode = document.getElementById("Gcodes")
