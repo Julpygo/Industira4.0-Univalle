@@ -6,7 +6,7 @@ const SerialPort = require('serialport');
 
 /* --- VARIABLES GLOBALES --- */
 
-Tb = ''; Te = ''; Tm = '';   
+Tb = '';SetTb='';SetTe=''; Te = ''; Tm = '';   
 P = ''; I = ''; D = '';   // PID hottend 
 // Parametros
 Df = ''; PasosE = ''; PasosX = ''; PasosY = ''; PasosZ = ''; 
@@ -234,6 +234,19 @@ const userManager = {
                 get: () => new Variant({ dataType: DataType.Double, value: Tb})
             },
         });
+        const SetpointTb = namespace.addAnalogDataItem({
+            componentOf: CncAxisY,
+            browseName: "SetpointTb",
+            definition: "Setpoint de temperatura de la base caliente",
+            valuePrecision: 0.01,
+            engineeringUnitsRange: { low: 100, high: 200 },
+            instrumentRange: { low: -100, high: +200 },
+            engineeringUnits: standardUnits.degree_celsius,
+            dataType: "Double",
+            value: {
+                get: () => new Variant({ dataType: DataType.Double, value: SetTb})
+            },
+        });
         const TempExtr = namespace.addAnalogDataItem({
             componentOf: CncSpindle,
             browseName: "TempExtrusor",
@@ -245,6 +258,19 @@ const userManager = {
             dataType: "Double",
             value: {
                 get: () => new Variant({ dataType: DataType.Double, value: Te})
+            },
+        });
+        const SetpointTe = namespace.addAnalogDataItem({
+            componentOf: CncSpindle,
+            browseName: "SetpointTe",
+            definition: "Setpoint de temperatura del extrusor",
+            valuePrecision: 0.01,
+            engineeringUnitsRange: { low: 100, high: 200 },
+            instrumentRange: { low: -100, high: +200 },
+            engineeringUnits: standardUnits.degree_celsius,
+            dataType: "Double",
+            value: {
+                get: () => new Variant({ dataType: DataType.Double, value: SetTb})
             },
         });
         const TempMotor = namespace.addAnalogDataItem({
@@ -479,6 +505,8 @@ parser.on('data', (line)=>{
     if(line.search("T:") != -1){
         Te = Number(line.slice(line.search('T')+2,line.search('/')-1));
         Tb = Number(line.slice(line.search('B')+2,line.search('@')-7));
+        SetTe = Number(line.slice(line.search('/')+1,line.search('B')-1));
+        SetTb = Number(line.slice(line.lastIndexOf('/')+1,line.search('@')-2))
     }
     else{
         readserial = line;
