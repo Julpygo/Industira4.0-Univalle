@@ -270,7 +270,7 @@ const userManager = {
             engineeringUnits: standardUnits.degree_celsius,
             dataType: "Double",
             value: {
-                get: () => new Variant({ dataType: DataType.Double, value: SetTb})
+                get: () => new Variant({ dataType: DataType.Double, value: SetTe})
             },
         });
         const TempMotor = namespace.addAnalogDataItem({
@@ -507,6 +507,7 @@ parser.on('data', (line)=>{
         Tb = Number(line.slice(line.search('B')+2,line.search('@')-7));
         SetTe = Number(line.slice(line.search('/')+1,line.search('B')-1));
         SetTb = Number(line.slice(line.lastIndexOf('/')+1,line.search('@')-2))
+        console.log(SetTe)
     }
     else{
         readserial = line;
@@ -522,6 +523,7 @@ parser.on('data', (line)=>{
             errImp = line.slice(line.search(':')+1,);
         }
     }
+    console.log(line)
 })
 
 
